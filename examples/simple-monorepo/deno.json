@@ -1,0 +1,15 @@
+{
+  "name": "simple-monorepo",
+  "version": "1.0.0",
+  "tasks": {
+    "test": "echo 'Running workspace tests'",
+    "build": "echo 'Building workspace'",
+    "dev": "echo 'Starting workspace development'"
+  },
+  "workspace": [
+    "./packages/utils",
+    "./packages/core", 
+    "./packages/ui",
+    "./apps/web"
+  ]
+}

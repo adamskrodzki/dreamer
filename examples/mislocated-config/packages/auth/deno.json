@@ -1,0 +1,8 @@
+{
+  "name": "@mislocated/auth",
+  "version": "1.0.0",
+  "tasks": {
+    "test": "deno test --allow-read",
+    "build": "echo 'Building auth package'"
+  }
+}

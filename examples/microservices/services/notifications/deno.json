@@ -1,0 +1,9 @@
+{
+  "name": "@microservices/notifications",
+  "version": "1.0.0",
+  "tasks": {
+    "test": "echo 'Notifications service tests passed'",
+    "build": "echo 'Building notifications service'",
+    "dev": "echo 'Starting notifications service on port 3002'"
+  }
+}

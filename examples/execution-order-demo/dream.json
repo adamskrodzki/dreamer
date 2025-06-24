@@ -1,0 +1,136 @@
+{
+  "workspace": {
+    "./services/database": {
+      "start": [],
+      "test": ["./apps/admin", "./apps/web"],
+      "build": []
+    },
+    "./services/auth": {
+      "start": [
+        {
+          "projectPath": "./services/database",
+          "task": "start",
+          "async": true,
+          "required": true,
+          "delay": 0
+        }
+      ],
+      "test": ["./apps/admin", "./apps/web"],
+      "build": ["./services/database"]
+    },
+    "./services/api": {
+      "start": [
+        {
+          "projectPath": "./services/database",
+          "task": "start",
+          "async": true,
+          "required": true,
+          "delay": 0
+        },
+        {
+          "projectPath": "./services/auth",
+          "task": "start",
+          "async": true,
+          "required": true,
+          "delay": 2000
+        }
+      ],
+      "test": ["./apps/admin", "./apps/web"],
+      "build": ["./services/database", "./services/auth"]
+    },
+    "./apps/admin": {
+      "dev": [
+        {
+          "projectPath": "./services/database",
+          "task": "start",
+          "async": true,
+          "required": true,
+          "delay": 0
+        },
+        {
+          "projectPath": "./services/auth",
+          "task": "start",
+          "async": true,
+          "required": true,
+          "delay": 1000
+        },
+        {
+          "projectPath": "./services/api",
+          "task": "start",
+          "async": true,
+          "required": true,
+          "delay": 3000
+        }
+      ],
+      "test": [],
+      "build": ["./services/database", "./services/auth", "./services/api"]
+    },
+    "./apps/web": {
+      "dev": [
+        {
+          "projectPath": "./services/database",
+          "task": "start",
+          "async": true,
+          "required": true,
+          "delay": 0
+        },
+        {
+          "projectPath": "./services/auth",
+          "task": "start",
+          "async": true,
+          "required": true,
+          "delay": 1000
+        },
+        {
+          "projectPath": "./services/api",
+          "task": "start",
+          "async": true,
+          "required": true,
+          "delay": 3000
+        }
+      ],
+      "test": [],
+      "build": ["./services/database", "./services/auth", "./services/api"]
+    },
+    "./packages/utils": {
+      "test": ["./services/database", "./services/auth", "./services/api", "./apps/admin", "./apps/web"],
+      "build": []
+    },
+    "./packages/ui": {
+      "test": ["./apps/admin", "./apps/web"],
+      "build": []
+    }
+  },
+  "tasks": {
+    "start": {
+      "async": true,
+      "required": true,
+      "delay": 0
+    },
+    "dev": {
+      "async": false,
+      "required": true,
+      "delay": 0
+    },
+    "test": {
+      "async": false,
+      "required": true,
+      "delay": 0
+    },
+    "build": {
+      "async": false,
+      "required": true,
+      "delay": 100
+    }
+  },
+  "recursive": [
+    {
+      "project": "./packages/utils",
+      "tasks": ["test"]
+    },
+    {
+      "project": "./services/database",
+      "tasks": ["test"]
+    }
+  ]
+}

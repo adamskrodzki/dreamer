@@ -1,0 +1,9 @@
+{
+  "name": "@microservices/web",
+  "version": "1.0.0",
+  "tasks": {
+    "test": "echo 'Web app tests passed'",
+    "build": "echo 'Building web application'",
+    "dev": "echo 'Starting web app on port 8000'"
+  }
+}

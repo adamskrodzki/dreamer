@@ -1,0 +1,7 @@
+{
+  "tasks": {
+    "start": "echo '[AUTH] Starting auth service...' && sleep 1 && echo '[AUTH] Auth service ready on port 3001'",
+    "test": "echo '[AUTH] Running auth tests...' && sleep 0.5 && echo '[AUTH] All auth tests passed'",
+    "build": "echo '[AUTH] Building auth service...' && sleep 0.4 && echo '[AUTH] Auth service build complete'"
+  }
+}

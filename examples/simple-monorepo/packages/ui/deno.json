@@ -1,0 +1,12 @@
+{
+  "name": "@simple-monorepo/ui",
+  "version": "1.0.0",
+  "exports": {
+    ".": "./src/mod.ts"
+  },
+  "tasks": {
+    "test": "echo 'UI tests passed'",
+    "build": "echo 'Building UI package'",
+    "dev": "echo 'Starting UI development server'"
+  }
+}

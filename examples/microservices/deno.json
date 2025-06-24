@@ -1,0 +1,17 @@
+{
+  "name": "microservices-workspace",
+  "version": "1.0.0",
+  "tasks": {
+    "test": "echo 'Running microservices tests'",
+    "build": "echo 'Building microservices'",
+    "dev": "echo 'Starting microservices development'"
+  },
+  "workspace": [
+    "./services/database",
+    "./services/auth",
+    "./services/api",
+    "./services/notifications",
+    "./apps/web",
+    "./apps/mobile"
+  ]
+}

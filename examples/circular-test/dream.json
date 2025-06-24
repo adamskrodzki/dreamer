@@ -1,0 +1,13 @@
+{
+  "workspace": {
+    "./packages/a": {
+      "test": ["./packages/b"]
+    },
+    "./packages/b": {
+      "test": ["./packages/c"]
+    },
+    "./packages/c": {
+      "test": ["./packages/a"]
+    }
+  }
+}

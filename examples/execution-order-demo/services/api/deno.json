@@ -1,0 +1,7 @@
+{
+  "tasks": {
+    "start": "echo '[API] Starting API service...' && sleep 1 && echo '[API] API service ready on port 3000'",
+    "test": "echo '[API] Running API tests...' && sleep 0.5 && echo '[API] All API tests passed'",
+    "build": "echo '[API] Building API service...' && sleep 0.4 && echo '[API] API service build complete'"
+  }
+}

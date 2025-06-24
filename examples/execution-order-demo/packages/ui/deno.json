@@ -1,0 +1,6 @@
+{
+  "tasks": {
+    "test": "echo '[UI] Running UI tests...' && sleep 0.2 && echo '[UI] All UI tests passed'",
+    "build": "echo '[UI] Building UI package...' && sleep 0.3 && echo '[UI] UI package build complete'"
+  }
+}

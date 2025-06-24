@@ -1,0 +1,12 @@
+{
+  "name": "@simple-monorepo/core",
+  "version": "1.0.0",
+  "exports": {
+    ".": "./src/mod.ts"
+  },
+  "tasks": {
+    "test": "echo 'Core tests passed'",
+    "build": "echo 'Building core package'",
+    "dev": "echo 'Starting core development server'"
+  }
+}

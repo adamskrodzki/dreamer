@@ -1,0 +1,41 @@
+{
+  "workspace": {
+    "./packages/auth": {
+      "test": ["./services/api", "./apps/web"]
+    },
+    "./apps/web": {
+      "dev": [
+        {
+          "projectPath": "./services/database",
+          "task": "start",
+          "async": true,
+          "delay": 0
+        },
+        {
+          "projectPath": "./services/auth",
+          "task": "dev",
+          "async": true,
+          "delay": 2000
+        },
+        {
+          "projectPath": "./services/api",
+          "task": "dev",
+          "async": true,
+          "delay": 4000
+        }
+      ]
+    }
+  },
+  "tasks": {
+    "test": {
+      "async": false,
+      "required": true,
+      "delay": 0
+    },
+    "dev": {
+      "async": true,
+      "required": true,
+      "delay": 1000
+    }
+  }
+}

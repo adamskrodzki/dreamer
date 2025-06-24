@@ -1,0 +1,12 @@
+{
+  "name": "@simple-monorepo/utils",
+  "version": "1.0.0",
+  "exports": {
+    ".": "./src/mod.ts"
+  },
+  "tasks": {
+    "test": "echo 'Utils tests passed'",
+    "build": "echo 'Building utils package'",
+    "dev": "echo 'Starting utils development'"
+  }
+}

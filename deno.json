@@ -1,0 +1,50 @@
+{
+  "name": "@JinxCodesAIi/dreamer-cli",
+  "version": "1.0.0",
+  "exports": {
+    ".": "./src/main.ts",
+    "./lib": "./src/dream_runner.ts"
+  },
+  "tasks": {
+    "dev": "deno run --allow-read --allow-run --allow-env --watch src/main.ts",
+    "test": "deno test --allow-read --allow-run --allow-env --allow-write",
+    "test:unit": "deno test tests/unit/ --allow-read --allow-run --allow-write",
+    "test:integration": "deno test tests/integration/ --allow-read --allow-run --allow-env --allow-write",
+    "test:e2e": "deno test tests/e2e/ --allow-read --allow-run --allow-env --allow-write --allow-net",
+    "test:watch": "deno test --allow-read --allow-run --allow-env --allow-write --watch",
+    "lint": "deno lint src/ tests/",
+    "fmt": "deno fmt src/ tests/",
+    "fmt:check": "deno fmt --check src/ tests/",
+    "check": "deno check src/main.ts",
+    "build": "deno compile --allow-read --allow-run --allow-env --output=dream src/main.ts",
+    "install": "deno install --global --allow-read --allow-run --allow-env --name=dream src/main.ts",
+    "install:force": "deno install --global --force --allow-read --allow-run --allow-env --name=dream src/main.ts"
+  },
+  "lint": {
+    "rules": {
+      "tags": ["recommended"]
+    }
+  },
+  "fmt": {
+    "useTabs": false,
+    "lineWidth": 100,
+    "indentWidth": 2,
+    "semiColons": true,
+    "singleQuote": false,
+    "proseWrap": "preserve"
+  },
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  },
+  "imports": {
+    "@std/path": "jsr:@std/path@^1.0.0",
+    "@std/fs": "jsr:@std/fs@^1.0.0",
+    "@std/testing": "jsr:@std/testing@^1.0.0",
+    "@std/assert": "jsr:@std/assert@^1.0.0",
+    "@std/cli": "jsr:@std/cli@^1.0.0"
+  }
+}

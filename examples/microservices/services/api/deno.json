@@ -1,0 +1,9 @@
+{
+  "name": "@microservices/api",
+  "version": "1.0.0",
+  "tasks": {
+    "test": "echo 'API service tests passed'",
+    "build": "echo 'Building API service'",
+    "dev": "echo 'Starting API service on port 3000'"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "@microservices/mobile",
+  "version": "1.0.0",
+  "tasks": {
+    "test": "echo 'Mobile app tests passed'",
+    "build": "echo 'Building mobile application'",
+    "dev": "echo 'Starting mobile app development server'"
+  }
+}

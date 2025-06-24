@@ -1,0 +1,10 @@
+{
+  "name": "@microservices/database",
+  "version": "1.0.0",
+  "tasks": {
+    "test": "echo 'Database tests passed'",
+    "build": "echo 'Building database service'",
+    "dev": "echo 'Starting database development mode'",
+    "start": "echo 'Starting database server on port 5432'"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "tasks": {
+    "dev": "echo '[WEB] Starting web app in dev mode...' && sleep 0.5 && echo '[WEB] Web app running on port 4000'",
+    "test": "echo '[WEB] Running web tests...' && sleep 0.3 && echo '[WEB] All web tests passed'",
+    "build": "echo '[WEB] Building web app...' && sleep 0.6 && echo '[WEB] Web app build complete'"
+  }
+}

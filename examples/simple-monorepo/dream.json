@@ -1,0 +1,85 @@
+{
+  "workspace": {
+    "./packages/utils": {
+      "test": ["./packages/core", "./packages/ui", "./apps/web"],
+      "build": []
+    },
+    "./packages/core": {
+      "test": ["./packages/ui", "./apps/web"],
+      "build": [],
+      "dev": [
+        {
+          "projectPath": "./packages/utils",
+          "task": "build",
+          "async": false,
+          "required": true,
+          "delay": 0
+        }
+      ]
+    },
+    "./packages/ui": {
+      "test": ["./apps/web"],
+      "build": [],
+      "dev": [
+        {
+          "projectPath": "./packages/utils",
+          "task": "build",
+          "async": false,
+          "required": true,
+          "delay": 0
+        },
+        {
+          "projectPath": "./packages/core",
+          "task": "dev",
+          "async": true,
+          "required": true,
+          "delay": 1000
+        }
+      ]
+    },
+    "./apps/web": {
+      "test": [],
+      "build": [],
+      "dev": [
+        {
+          "projectPath": "./packages/utils",
+          "task": "build",
+          "async": false,
+          "required": true,
+          "delay": 0
+        },
+        {
+          "projectPath": "./packages/core",
+          "task": "dev",
+          "async": true,
+          "required": true,
+          "delay": 1000
+        },
+        {
+          "projectPath": "./packages/ui",
+          "task": "dev",
+          "async": true,
+          "required": true,
+          "delay": 2000
+        }
+      ]
+    }
+  },
+  "tasks": {
+    "test": {
+      "async": false,
+      "required": true,
+      "delay": 0
+    },
+    "build": {
+      "async": false,
+      "required": true,
+      "delay": 0
+    },
+    "dev": {
+      "async": false,
+      "required": true,
+      "delay": 0
+    }
+  }
+}

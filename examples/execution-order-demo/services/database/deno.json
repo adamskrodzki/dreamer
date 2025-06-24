@@ -1,0 +1,7 @@
+{
+  "tasks": {
+    "start": "echo '[DATABASE] Starting database service...' && sleep 1 && echo '[DATABASE] Database ready on port 5432'",
+    "test": "echo '[DATABASE] Running database tests...' && sleep 0.5 && echo '[DATABASE] All database tests passed'",
+    "build": "echo '[DATABASE] Building database...' && sleep 0.3 && echo '[DATABASE] Database build complete'"
+  }
+}

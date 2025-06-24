@@ -1,0 +1,9 @@
+{
+  "name": "@microservices/auth",
+  "version": "1.0.0",
+  "tasks": {
+    "test": "echo 'Auth service tests passed'",
+    "build": "echo 'Building auth service'",
+    "dev": "echo 'Starting auth service on port 3001'"
+  }
+}

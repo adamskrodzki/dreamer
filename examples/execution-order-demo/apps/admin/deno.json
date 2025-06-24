@@ -1,0 +1,7 @@
+{
+  "tasks": {
+    "dev": "echo '[ADMIN] Starting admin app in dev mode...' && sleep 0.5 && echo '[ADMIN] Admin app running on port 4001'",
+    "test": "echo '[ADMIN] Running admin tests...' && sleep 0.3 && echo '[ADMIN] All admin tests passed'",
+    "build": "echo '[ADMIN] Building admin app...' && sleep 0.6 && echo '[ADMIN] Admin app build complete'"
+  }
+}

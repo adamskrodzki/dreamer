@@ -1,0 +1,15 @@
+{
+  "workspace": {
+    "./auth": {
+      "test": [],
+      "build": []
+    }
+  },
+  "tasks": {
+    "test": {
+      "async": false,
+      "required": true,
+      "delay": 0
+    }
+  }
+}

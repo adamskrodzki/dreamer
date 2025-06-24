@@ -1,0 +1,7 @@
+{
+  "name": "no-config-workspace",
+  "version": "1.0.0",
+  "tasks": {
+    "test": "echo 'Running tests'"
+  }
+}

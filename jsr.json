@@ -1,0 +1,30 @@
+{
+  "name": "@JinxCodesAIi/dreamer-cli",
+  "version": "1.0.0",
+  "description": "Dependency-aware task execution for Deno monorepos",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JinxCodesAI/dreamer.git"
+  },
+  "exports": {
+    ".": "./src/main.ts",
+    "./lib": "./src/dream_runner.ts",
+    "./types": "./src/types.ts"
+  },
+  "publish": {
+    "exclude": [
+      "tests/",
+      "docs/",
+      ".github/",
+      "*.test.ts",
+      "fixtures/"
+    ],
+    "include": [
+      "src/",
+      "README.md",
+      "LICENSE",
+      "deno.json"
+    ]
+  }
+}

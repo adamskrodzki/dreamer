@@ -1,0 +1,11 @@
+{
+  "name": "mislocated-config-workspace",
+  "version": "1.0.0",
+  "tasks": {
+    "test": "echo 'Running workspace tests'",
+    "build": "echo 'Building workspace'"
+  },
+  "workspace": [
+    "./packages/auth"
+  ]
+}
