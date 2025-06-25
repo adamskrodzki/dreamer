@@ -1,6 +1,6 @@
-import { join, dirname } from "jsr:@std/path@^1.0.0";
+import { dirname, join } from "jsr:@std/path@^1.0.0";
 import { exists } from "jsr:@std/fs@^1.0.0";
-import type { DreamConfig, Dependency, DetailedDependency } from "./types.ts";
+import type { Dependency, DetailedDependency, DreamConfig } from "./types.ts";
 import { ConfigError } from "./errors.ts";
 
 export class ConfigManager {
@@ -12,15 +12,15 @@ export class ConfigManager {
 
   async load(): Promise<DreamConfig> {
     const configPath = await this.findConfigFile();
-    
+
     try {
       const content = await Deno.readTextFile(configPath);
       const rawConfig = JSON.parse(content);
       const config = this.validate(rawConfig);
-      
+
       // Store the workspace root for later use
       this.workspaceRoot = dirname(configPath);
-      
+
       return config;
     } catch (error) {
       if (error instanceof Deno.errors.NotFound) {
@@ -65,22 +65,22 @@ export class ConfigManager {
 
   async findConfigFile(): Promise<string> {
     let currentDir = this.workspaceRoot || Deno.cwd();
-    
+
     while (true) {
       const configPath = join(currentDir, "dream.json");
-      
+
       if (await exists(configPath)) {
         return configPath;
       }
-      
+
       const parentDir = dirname(currentDir);
       if (parentDir === currentDir) {
         // Reached root directory
         throw new ConfigError(
-          "No dream.json configuration file found in current directory or any parent directory"
+          "No dream.json configuration file found in current directory or any parent directory",
         );
       }
-      
+
       currentDir = parentDir;
     }
   }
@@ -111,11 +111,11 @@ export class ConfigManager {
       for (const [taskName, dependencies] of Object.entries(tasks)) {
         if (!Array.isArray(dependencies)) {
           throw new ConfigError(
-            `Dependencies for ${projectPath}.${taskName} must be an array`
+            `Dependencies for ${projectPath}.${taskName} must be an array`,
           );
         }
 
-        validatedTasks[taskName] = dependencies.map((dep, index) => 
+        validatedTasks[taskName] = dependencies.map((dep, index) =>
           this.validateDependency(dep, `${projectPath}.${taskName}[${index}]`)
         );
       }
@@ -124,8 +124,10 @@ export class ConfigManager {
     }
 
     // Validate optional tasks section
-    let validatedTasks: Record<string, { async?: boolean; required?: boolean; delay?: number }> | undefined;
-    
+    let validatedTasks:
+      | Record<string, { async?: boolean; required?: boolean; delay?: number }>
+      | undefined;
+
     if (config.tasks) {
       if (typeof config.tasks !== "object") {
         throw new ConfigError("'tasks' section must be an object");
@@ -194,7 +196,9 @@ export class ConfigManager {
         const tasks = recConfig.tasks as unknown[];
         for (const [taskIndex, task] of tasks.entries()) {
           if (typeof task !== "string") {
-            throw new ConfigError(`Recursive config at index ${index}, task at index ${taskIndex} must be a string`);
+            throw new ConfigError(
+              `Recursive config at index ${index}, task at index ${taskIndex} must be a string`,
+            );
           }
         }
 

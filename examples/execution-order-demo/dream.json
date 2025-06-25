@@ -93,7 +93,13 @@
       "build": ["./services/database", "./services/auth", "./services/api"]
     },
     "./packages/utils": {
-      "test": ["./services/database", "./services/auth", "./services/api", "./apps/admin", "./apps/web"],
+      "test": [
+        "./services/database",
+        "./services/auth",
+        "./services/api",
+        "./apps/admin",
+        "./apps/web"
+      ],
       "build": []
     },
     "./packages/ui": {

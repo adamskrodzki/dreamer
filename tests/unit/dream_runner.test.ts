@@ -214,7 +214,7 @@ Deno.test("DreamRunner - execute with debug output", async () => {
     const summary = await runner.execute(executionPlan, true); // debug = true
 
     assertEquals(summary.successfulTasks, 1);
-    
+
     // Verify debug output
     assertEquals(output.includes("Executing 1 tasks:"), true);
     assertEquals(output.includes("[1/1] Starting: ./packages/utils:test"), true);
@@ -261,7 +261,7 @@ Deno.test("DreamRunner - execute with debug output and failure", async () => {
     const summary = await runner.execute(executionPlan, true); // debug = true
 
     assertEquals(summary.failedTasks, 1);
-    
+
     // Verify debug output for failure
     assertEquals(output.includes("❌ ./packages/utils test failed"), true);
   } finally {
@@ -271,7 +271,7 @@ Deno.test("DreamRunner - execute with debug output and failure", async () => {
 
 Deno.test("DreamRunner - create static method", () => {
   const runner = DreamRunner.create("/workspace");
-  
+
   // Should create a DreamRunner instance
   assertEquals(runner instanceof DreamRunner, true);
 });
@@ -343,5 +343,5 @@ Deno.test("DreamRunner - execute with mixed success and failure", async () => {
   assertEquals(summary.skippedTasks, 0);
   assertEquals(summary.results.length, 2);
   assertEquals(summary.results[0].success, false); // test failed
-  assertEquals(summary.results[1].success, true);  // build succeeded
+  assertEquals(summary.results[1].success, true); // build succeeded
 });

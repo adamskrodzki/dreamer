@@ -11,7 +11,7 @@ async function createTestWorkspace(baseDir: string, files: Record<string, string
   for (const [filePath, content] of Object.entries(files)) {
     const fullPath = `${baseDir}/${filePath}`;
     const dir = fullPath.substring(0, fullPath.lastIndexOf("/"));
-    
+
     // Create directory if it doesn't exist
     try {
       await Deno.mkdir(dir, { recursive: true });
@@ -20,7 +20,7 @@ async function createTestWorkspace(baseDir: string, files: Record<string, string
         throw error;
       }
     }
-    
+
     await Deno.writeTextFile(fullPath, content);
   }
 }
@@ -54,7 +54,16 @@ class ServiceOrchestrationTestManager {
     });
   }
 
-  setupFailingService(command: string[], result: { success: boolean; exitCode: number; stdout: string; stderr: string; duration: number }): void {
+  setupFailingService(
+    command: string[],
+    result: {
+      success: boolean;
+      exitCode: number;
+      stdout: string;
+      stderr: string;
+      duration: number;
+    },
+  ): void {
     this.mockRunner.setMockResult("deno", command, result);
   }
 
@@ -70,7 +79,7 @@ class ServiceOrchestrationTestManager {
 Deno.test("Integration Microservices - Basic service orchestration", async () => {
   const tempDir = await Deno.makeTempDir();
   const testManager = new ServiceOrchestrationTestManager();
-  
+
   try {
     // Setup mock results for all services
     testManager.setupMockResults();
@@ -87,26 +96,26 @@ Deno.test("Integration Microservices - Basic service orchestration", async () =>
               task: "start",
               async: true,
               required: true,
-              delay: 0
-            }
+              delay: 0,
+            },
           ],
         },
         "./services/api": {
           start: [
             {
               projectPath: "./services/database",
-              task: "start", 
+              task: "start",
               async: true,
               required: true,
-              delay: 0
+              delay: 0,
             },
             {
               projectPath: "./services/auth",
               task: "start",
               async: true,
               required: true,
-              delay: 500 // Wait 500ms after database
-            }
+              delay: 500, // Wait 500ms after database
+            },
           ],
         },
         "./apps/web": {
@@ -116,22 +125,22 @@ Deno.test("Integration Microservices - Basic service orchestration", async () =>
               task: "start",
               async: true,
               required: true,
-              delay: 0
+              delay: 0,
             },
             {
-              projectPath: "./services/auth", 
+              projectPath: "./services/auth",
               task: "start",
               async: true,
               required: true,
-              delay: 500
+              delay: 500,
             },
             {
               projectPath: "./services/api",
-              task: "start", 
+              task: "start",
               async: true,
               required: true,
-              delay: 1000 // Wait 1s after database
-            }
+              delay: 1000, // Wait 1s after database
+            },
           ],
         },
       },
@@ -152,16 +161,16 @@ Deno.test("Integration Microservices - Basic service orchestration", async () =>
     await createTestWorkspace(tempDir, {
       "dream.json": JSON.stringify(config, null, 2),
       "services/database/deno.json": JSON.stringify({
-        tasks: { start: "echo 'Database starting...'" }
+        tasks: { start: "echo 'Database starting...'" },
       }),
       "services/auth/deno.json": JSON.stringify({
-        tasks: { start: "echo 'Auth starting...'" }
+        tasks: { start: "echo 'Auth starting...'" },
       }),
       "services/api/deno.json": JSON.stringify({
-        tasks: { start: "echo 'API starting...'" }
+        tasks: { start: "echo 'API starting...'" },
       }),
       "apps/web/deno.json": JSON.stringify({
-        tasks: { dev: "echo 'Web app starting...'" }
+        tasks: { dev: "echo 'Web app starting...'" },
       }),
     });
 
@@ -178,14 +187,13 @@ Deno.test("Integration Microservices - Basic service orchestration", async () =>
     assertEquals(summary.totalTasks, 4);
     assertEquals(summary.successfulTasks, 4);
     assertEquals(summary.failedTasks, 0);
-    
+
     // Verify services started in correct order with delays
     const callLog = testManager.getMockRunner().getCallLog();
     assertEquals(callLog.length, 4);
-    
+
     // Should take at least 1000ms due to delays
     assertEquals(totalTime >= 1000, true);
-    
   } finally {
     testManager.reset();
     await Deno.remove(tempDir, { recursive: true });
@@ -195,7 +203,7 @@ Deno.test("Integration Microservices - Basic service orchestration", async () =>
 Deno.test("Integration Microservices - Service failure handling", async () => {
   const tempDir = await Deno.makeTempDir();
   const testManager = new ServiceOrchestrationTestManager();
-  
+
   try {
     // Setup mock results with auth service failure
     testManager.setupMockResults();
@@ -217,8 +225,8 @@ Deno.test("Integration Microservices - Service failure handling", async () => {
               task: "start",
               async: true,
               required: true,
-              delay: 0
-            }
+              delay: 0,
+            },
           ],
         },
         "./services/api": {
@@ -228,8 +236,8 @@ Deno.test("Integration Microservices - Service failure handling", async () => {
               task: "start",
               async: true,
               required: true,
-              delay: 0
-            }
+              delay: 0,
+            },
           ],
         },
       },
@@ -245,13 +253,13 @@ Deno.test("Integration Microservices - Service failure handling", async () => {
     await createTestWorkspace(tempDir, {
       "dream.json": JSON.stringify(config, null, 2),
       "services/database/deno.json": JSON.stringify({
-        tasks: { start: "echo 'Database starting...'" }
+        tasks: { start: "echo 'Database starting...'" },
       }),
       "services/auth/deno.json": JSON.stringify({
-        tasks: { start: "echo 'Auth starting...'" }
+        tasks: { start: "echo 'Auth starting...'" },
       }),
       "services/api/deno.json": JSON.stringify({
-        tasks: { start: "echo 'API starting...'" }
+        tasks: { start: "echo 'API starting...'" },
       }),
     });
 
@@ -267,7 +275,6 @@ Deno.test("Integration Microservices - Service failure handling", async () => {
     assertEquals(summary.successfulTasks, 0); // Auth fails, stopping execution
     assertEquals(summary.failedTasks, 1); // Auth should fail
     assertEquals(summary.skippedTasks, 1); // API should be skipped due to auth failure
-    
   } finally {
     testManager.reset();
     await Deno.remove(tempDir, { recursive: true });
@@ -293,15 +300,15 @@ Deno.test("Integration Microservices - Complex dependency graph with health chec
               task: "start",
               async: true,
               required: true,
-              delay: 0
+              delay: 0,
             },
             {
               projectPath: "./services/redis",
               task: "start",
               async: true,
               required: true,
-              delay: 100
-            }
+              delay: 100,
+            },
           ],
         },
         "./services/user-service": {
@@ -311,15 +318,15 @@ Deno.test("Integration Microservices - Complex dependency graph with health chec
               task: "start",
               async: true,
               required: true,
-              delay: 0
+              delay: 0,
             },
             {
               projectPath: "./services/auth",
               task: "start",
               async: true,
               required: true,
-              delay: 500
-            }
+              delay: 500,
+            },
           ],
         },
         "./services/notification-service": {
@@ -329,15 +336,15 @@ Deno.test("Integration Microservices - Complex dependency graph with health chec
               task: "start",
               async: true,
               required: true,
-              delay: 0
+              delay: 0,
             },
             {
               projectPath: "./services/user-service",
               task: "start",
               async: true,
               required: true,
-              delay: 300
-            }
+              delay: 300,
+            },
           ],
         },
         "./services/api-gateway": {
@@ -347,22 +354,22 @@ Deno.test("Integration Microservices - Complex dependency graph with health chec
               task: "start",
               async: true,
               required: true,
-              delay: 0
+              delay: 0,
             },
             {
               projectPath: "./services/user-service",
               task: "start",
               async: true,
               required: true,
-              delay: 200
+              delay: 200,
             },
             {
               projectPath: "./services/notification-service",
               task: "start",
               async: true,
               required: true,
-              delay: 400
-            }
+              delay: 400,
+            },
           ],
         },
       },
@@ -378,22 +385,22 @@ Deno.test("Integration Microservices - Complex dependency graph with health chec
     await createTestWorkspace(tempDir, {
       "dream.json": JSON.stringify(config, null, 2),
       "services/database/deno.json": JSON.stringify({
-        tasks: { start: "echo 'Database ready'" }
+        tasks: { start: "echo 'Database ready'" },
       }),
       "services/redis/deno.json": JSON.stringify({
-        tasks: { start: "echo 'Redis ready'" }
+        tasks: { start: "echo 'Redis ready'" },
       }),
       "services/auth/deno.json": JSON.stringify({
-        tasks: { start: "echo 'Auth service ready'" }
+        tasks: { start: "echo 'Auth service ready'" },
       }),
       "services/user-service/deno.json": JSON.stringify({
-        tasks: { start: "echo 'User service ready'" }
+        tasks: { start: "echo 'User service ready'" },
       }),
       "services/notification-service/deno.json": JSON.stringify({
-        tasks: { start: "echo 'Notification service ready'" }
+        tasks: { start: "echo 'Notification service ready'" },
       }),
       "services/api-gateway/deno.json": JSON.stringify({
-        tasks: { start: "echo 'API Gateway ready'" }
+        tasks: { start: "echo 'API Gateway ready'" },
       }),
     });
 
@@ -418,7 +425,6 @@ Deno.test("Integration Microservices - Complex dependency graph with health chec
 
     // Should take significant time due to complex dependencies and delays
     assertEquals(totalTime >= 400, true);
-
   } finally {
     testManager.reset();
     await Deno.remove(tempDir, { recursive: true });
@@ -443,8 +449,8 @@ Deno.test("Integration Microservices - Async execution timing", async () => {
               task: "start",
               async: true,
               required: true,
-              delay: 200 // 200ms delay
-            }
+              delay: 200, // 200ms delay
+            },
           ],
         },
         "./services/api": {
@@ -454,15 +460,15 @@ Deno.test("Integration Microservices - Async execution timing", async () => {
               task: "start",
               async: true,
               required: true,
-              delay: 0
+              delay: 0,
             },
             {
               projectPath: "./services/auth",
               task: "start",
               async: true,
               required: true,
-              delay: 300 // 300ms delay
-            }
+              delay: 300, // 300ms delay
+            },
           ],
         },
       },
@@ -478,13 +484,13 @@ Deno.test("Integration Microservices - Async execution timing", async () => {
     await createTestWorkspace(tempDir, {
       "dream.json": JSON.stringify(config, null, 2),
       "services/database/deno.json": JSON.stringify({
-        tasks: { start: "echo 'Database ready'" }
+        tasks: { start: "echo 'Database ready'" },
       }),
       "services/auth/deno.json": JSON.stringify({
-        tasks: { start: "echo 'Auth ready'" }
+        tasks: { start: "echo 'Auth ready'" },
       }),
       "services/api/deno.json": JSON.stringify({
-        tasks: { start: "echo 'API ready'" }
+        tasks: { start: "echo 'API ready'" },
       }),
     });
 
@@ -504,7 +510,6 @@ Deno.test("Integration Microservices - Async execution timing", async () => {
 
     // Should take at least 300ms due to delays (auth waits 200ms, api waits 300ms)
     assertEquals(totalTime >= 300, true);
-
   } finally {
     testManager.reset();
     await Deno.remove(tempDir, { recursive: true });
@@ -530,8 +535,8 @@ Deno.test("Integration Microservices - Service lifecycle management", async () =
               task: "start",
               async: true,
               required: true,
-              delay: 0
-            }
+              delay: 0,
+            },
           ],
         },
         "./services/notification-service": {
@@ -541,15 +546,15 @@ Deno.test("Integration Microservices - Service lifecycle management", async () =
               task: "start",
               async: true,
               required: true,
-              delay: 0
+              delay: 0,
             },
             {
               projectPath: "./services/user-service",
               task: "start",
               async: true,
               required: true,
-              delay: 100
-            }
+              delay: 100,
+            },
           ],
         },
         "./apps/web-app": {
@@ -559,15 +564,15 @@ Deno.test("Integration Microservices - Service lifecycle management", async () =
               task: "start",
               async: true,
               required: true,
-              delay: 0
+              delay: 0,
             },
             {
               projectPath: "./services/notification-service",
               task: "start",
               async: true,
               required: true,
-              delay: 200
-            }
+              delay: 200,
+            },
           ],
         },
       },
@@ -588,19 +593,19 @@ Deno.test("Integration Microservices - Service lifecycle management", async () =
     await createTestWorkspace(tempDir, {
       "dream.json": JSON.stringify(config, null, 2),
       "infrastructure/database/deno.json": JSON.stringify({
-        tasks: { start: "echo 'Database infrastructure ready'" }
+        tasks: { start: "echo 'Database infrastructure ready'" },
       }),
       "infrastructure/message-queue/deno.json": JSON.stringify({
-        tasks: { start: "echo 'Message queue ready'" }
+        tasks: { start: "echo 'Message queue ready'" },
       }),
       "services/user-service/deno.json": JSON.stringify({
-        tasks: { start: "echo 'User service ready'" }
+        tasks: { start: "echo 'User service ready'" },
       }),
       "services/notification-service/deno.json": JSON.stringify({
-        tasks: { start: "echo 'Notification service ready'" }
+        tasks: { start: "echo 'Notification service ready'" },
       }),
       "apps/web-app/deno.json": JSON.stringify({
-        tasks: { dev: "echo 'Web app running in dev mode'" }
+        tasks: { dev: "echo 'Web app running in dev mode'" },
       }),
     });
 
@@ -624,7 +629,6 @@ Deno.test("Integration Microservices - Service lifecycle management", async () =
     // Verify all services were called in correct order
     const callLog = testManager.getMockRunner().getCallLog();
     assertEquals(callLog.length, 3);
-
   } finally {
     testManager.reset();
     await Deno.remove(tempDir, { recursive: true });

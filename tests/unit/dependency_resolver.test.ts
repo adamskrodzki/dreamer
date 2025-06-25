@@ -135,8 +135,8 @@ Deno.test("DependencyResolver - diamond dependency pattern (recursive)", () => {
 
   assertEquals(plan.tasks.length, 4);
   // utils should only appear once (deduplication)
-  const taskIds = plan.tasks.map(t => t.id);
-  assertEquals(taskIds.filter(id => id === "./packages/utils:test").length, 1);
+  const taskIds = plan.tasks.map((t) => t.id);
+  assertEquals(taskIds.filter((id) => id === "./packages/utils:test").length, 1);
 
   // utils should come first
   assertEquals(plan.tasks[0].id, "./packages/utils:test");
@@ -170,7 +170,7 @@ Deno.test("DependencyResolver - circular dependency detection (recursive)", () =
   assertThrows(
     () => resolver.resolve("./packages/a", "test"),
     CircularDependencyError,
-    "Circular dependency detected"
+    "Circular dependency detected",
   );
 });
 
@@ -194,7 +194,7 @@ Deno.test("DependencyResolver - self-referencing circular dependency (recursive)
   assertThrows(
     () => resolver.resolve("./packages/self", "test"),
     CircularDependencyError,
-    "Circular dependency detected"
+    "Circular dependency detected",
   );
 });
 
@@ -295,25 +295,25 @@ Deno.test("DependencyResolver - detailed dependency properties comprehensive", (
   assertEquals(plan.tasks.length, 4);
 
   // Database task with explicit properties
-  const dbTask = plan.tasks.find(t => t.id === "./services/database:start")!;
+  const dbTask = plan.tasks.find((t) => t.id === "./services/database:start")!;
   assertEquals(dbTask.async, true);
   assertEquals(dbTask.required, false);
   assertEquals(dbTask.delay, 1000);
 
   // Auth task with explicit properties
-  const authTask = plan.tasks.find(t => t.id === "./services/auth:dev")!;
+  const authTask = plan.tasks.find((t) => t.id === "./services/auth:dev")!;
   assertEquals(authTask.async, false);
   assertEquals(authTask.required, true);
   assertEquals(authTask.delay, 2000);
 
   // API task with only projectPath specified, should use task defaults
-  const apiTask = plan.tasks.find(t => t.id === "./services/api:dev")!;
+  const apiTask = plan.tasks.find((t) => t.id === "./services/api:dev")!;
   assertEquals(apiTask.async, true); // from task defaults
   assertEquals(apiTask.required, false); // from task defaults
   assertEquals(apiTask.delay, 500); // from task defaults
 
   // Main web task should use task defaults
-  const webTask = plan.tasks.find(t => t.id === "./apps/web:dev")!;
+  const webTask = plan.tasks.find((t) => t.id === "./apps/web:dev")!;
   assertEquals(webTask.async, true); // from task defaults
   assertEquals(webTask.required, false); // from task defaults
   assertEquals(webTask.delay, 500); // from task defaults
@@ -362,19 +362,19 @@ Deno.test("DependencyResolver - detailed dependency properties with recursive re
   assertEquals(plan.tasks.length, 3);
 
   // Utils task (deepest dependency)
-  const utilsTask = plan.tasks.find(t => t.id === "./packages/utils:test")!;
+  const utilsTask = plan.tasks.find((t) => t.id === "./packages/utils:test")!;
   assertEquals(utilsTask.async, false);
   assertEquals(utilsTask.required, true);
   assertEquals(utilsTask.delay, 500);
 
   // Auth task (intermediate dependency)
-  const authTask = plan.tasks.find(t => t.id === "./packages/auth:test")!;
+  const authTask = plan.tasks.find((t) => t.id === "./packages/auth:test")!;
   assertEquals(authTask.async, true);
   assertEquals(authTask.required, false);
   assertEquals(authTask.delay, 1000);
 
   // Web task (main task)
-  const webTask = plan.tasks.find(t => t.id === "./apps/web:test")!;
+  const webTask = plan.tasks.find((t) => t.id === "./apps/web:test")!;
   assertEquals(webTask.async, false); // default
   assertEquals(webTask.required, true); // default
   assertEquals(webTask.delay, 0); // default
@@ -479,13 +479,33 @@ Deno.test("DependencyResolver - resolveTestPattern (corrected behavior)", () => 
   const plan = resolver.resolveTestPattern("./packages/utils", "test");
 
   // Should only test utils and its configured dependencies (base), NOT its clients
-  assertEquals(plan.tasks.length, 2, "Should only execute configured dependencies + current project");
-  const taskIds = plan.tasks.map(t => t.id);
-  assertEquals(taskIds.includes("./packages/base:test"), true, "Should include configured dependency");
+  assertEquals(
+    plan.tasks.length,
+    2,
+    "Should only execute configured dependencies + current project",
+  );
+  const taskIds = plan.tasks.map((t) => t.id);
+  assertEquals(
+    taskIds.includes("./packages/base:test"),
+    true,
+    "Should include configured dependency",
+  );
   assertEquals(taskIds.includes("./packages/utils:test"), true, "Should include current project");
-  assertEquals(taskIds.includes("./packages/core:test"), false, "Should NOT auto-discover core (client)");
-  assertEquals(taskIds.includes("./packages/ui:test"), false, "Should NOT auto-discover ui (client)");
-  assertEquals(taskIds.includes("./apps/web:test"), false, "Should NOT auto-discover web (indirect client)");
+  assertEquals(
+    taskIds.includes("./packages/core:test"),
+    false,
+    "Should NOT auto-discover core (client)",
+  );
+  assertEquals(
+    taskIds.includes("./packages/ui:test"),
+    false,
+    "Should NOT auto-discover ui (client)",
+  );
+  assertEquals(
+    taskIds.includes("./apps/web:test"),
+    false,
+    "Should NOT auto-discover web (indirect client)",
+  );
 });
 
 Deno.test("DependencyResolver - resolveDevPattern (non-recursive)", () => {
@@ -517,7 +537,13 @@ Deno.test("DependencyResolver - recursive dependency order preservation", () => 
   const config: DreamConfig = {
     workspace: {
       "./services/database": {
-        test: ["./services/auth", "./services/api", "./services/notifications", "./apps/web", "./apps/mobile"],
+        test: [
+          "./services/auth",
+          "./services/api",
+          "./services/notifications",
+          "./apps/web",
+          "./apps/mobile",
+        ],
       },
       "./services/auth": {
         test: ["./services/api", "./apps/web"],
@@ -550,16 +576,20 @@ Deno.test("DependencyResolver - recursive dependency order preservation", () => 
 
   // Expected order based on recursive depth-first resolution:
   const expectedOrder = [
-    "./apps/web:test",      // From auth -> api -> web
-    "./apps/mobile:test",   // From auth -> api -> mobile
-    "./services/api:test",  // From auth -> api (after its deps)
+    "./apps/web:test", // From auth -> api -> web
+    "./apps/mobile:test", // From auth -> api -> mobile
+    "./services/api:test", // From auth -> api (after its deps)
     "./services/auth:test", // From database -> auth (after its deps)
     "./services/notifications:test", // From database -> notifications (after its deps)
     "./services/database:test", // Finally database itself
   ];
 
   for (let i = 0; i < expectedOrder.length; i++) {
-    assertEquals(plan.tasks[i].id, expectedOrder[i], `Task ${i} should be ${expectedOrder[i]} but was ${plan.tasks[i].id}`);
+    assertEquals(
+      plan.tasks[i].id,
+      expectedOrder[i],
+      `Task ${i} should be ${expectedOrder[i]} but was ${plan.tasks[i].id}`,
+    );
   }
 });
 
@@ -567,7 +597,13 @@ Deno.test("DependencyResolver - non-recursive dependency order", () => {
   const config: DreamConfig = {
     workspace: {
       "./services/database": {
-        test: ["./services/auth", "./services/api", "./services/notifications", "./apps/web", "./apps/mobile"],
+        test: [
+          "./services/auth",
+          "./services/api",
+          "./services/notifications",
+          "./apps/web",
+          "./apps/mobile",
+        ],
       },
       "./services/auth": {
         test: ["./services/api", "./apps/web"],
@@ -595,16 +631,20 @@ Deno.test("DependencyResolver - non-recursive dependency order", () => {
 
   // Expected order based on non-recursive resolution (direct dependencies in order):
   const expectedOrder = [
-    "./services/auth:test",        // First dependency
-    "./services/api:test",         // Second dependency
+    "./services/auth:test", // First dependency
+    "./services/api:test", // Second dependency
     "./services/notifications:test", // Third dependency
-    "./apps/web:test",             // Fourth dependency
-    "./apps/mobile:test",          // Fifth dependency
-    "./services/database:test",    // Finally database itself
+    "./apps/web:test", // Fourth dependency
+    "./apps/mobile:test", // Fifth dependency
+    "./services/database:test", // Finally database itself
   ];
 
   for (let i = 0; i < expectedOrder.length; i++) {
-    assertEquals(plan.tasks[i].id, expectedOrder[i], `Task ${i} should be ${expectedOrder[i]} but was ${plan.tasks[i].id}`);
+    assertEquals(
+      plan.tasks[i].id,
+      expectedOrder[i],
+      `Task ${i} should be ${expectedOrder[i]} but was ${plan.tasks[i].id}`,
+    );
   }
 });
 

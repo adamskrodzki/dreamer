@@ -8,7 +8,7 @@
   },
   "workspace": [
     "./packages/utils",
-    "./packages/core", 
+    "./packages/core",
     "./packages/ui",
     "./apps/web"
   ]

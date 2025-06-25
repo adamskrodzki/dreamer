@@ -1,7 +1,13 @@
 {
   "workspace": {
     "./services/database": {
-      "test": ["./services/auth", "./services/api", "./services/notifications", "./apps/web", "./apps/mobile"],
+      "test": [
+        "./services/auth",
+        "./services/api",
+        "./services/notifications",
+        "./apps/web",
+        "./apps/mobile"
+      ],
       "dev": [],
       "build": [],
       "start": []

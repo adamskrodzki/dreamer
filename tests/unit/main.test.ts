@@ -1,5 +1,5 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { parseCliArgs, main } from "../../src/main.ts";
+import { main, parseCliArgs } from "../../src/main.ts";
 
 Deno.test("CLI - parseCliArgs with task only", () => {
   const result = parseCliArgs(["test"]);

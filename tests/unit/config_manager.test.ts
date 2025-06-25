@@ -105,8 +105,11 @@ function assertValidationThrows(manager: ConfigManager, config: unknown, expecte
   } catch (error) {
     assertEquals(error instanceof ConfigError, true);
     if (error instanceof ConfigError) {
-      assertEquals(error.message.includes(expectedMessage), true,
-        `Expected error message to include "${expectedMessage}", got: "${error.message}"`);
+      assertEquals(
+        error.message.includes(expectedMessage),
+        true,
+        `Expected error message to include "${expectedMessage}", got: "${error.message}"`,
+      );
     }
   }
 }
@@ -141,7 +144,11 @@ Deno.test("ConfigManager - reject non-array dependencies", () => {
       },
     },
   };
-  assertValidationThrows(manager, invalidConfig, "Dependencies for ./packages/auth.test must be an array");
+  assertValidationThrows(
+    manager,
+    invalidConfig,
+    "Dependencies for ./packages/auth.test must be an array",
+  );
 });
 
 Deno.test("ConfigManager - reject empty dependency string", () => {
@@ -258,7 +265,7 @@ Deno.test("ConfigManager - findConfigFile throws when not found", async () => {
     await assertRejects(
       () => manager.findConfigFile(),
       ConfigError,
-      "No dream.json configuration file found"
+      "No dream.json configuration file found",
     );
   } finally {
     await Deno.remove(tempDir, { recursive: true });
@@ -301,7 +308,7 @@ Deno.test("ConfigManager - load throws on invalid JSON", async () => {
     await assertRejects(
       () => manager.load(),
       ConfigError,
-      "Invalid JSON in configuration file"
+      "Invalid JSON in configuration file",
     );
   } finally {
     await Deno.remove(tempDir, { recursive: true });
@@ -317,7 +324,7 @@ Deno.test("ConfigManager - load throws on missing file", async () => {
     await assertRejects(
       () => manager.load(),
       ConfigError,
-      "No dream.json configuration file found"
+      "No dream.json configuration file found",
     );
   } finally {
     await Deno.remove(tempDir, { recursive: true });

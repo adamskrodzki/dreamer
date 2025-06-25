@@ -1,22 +1,22 @@
 /**
  * Shared test utilities for Dream CLI tests
- * 
+ *
  * This module provides common test helper functions to ensure consistency
  * across all test files and avoid code duplication.
  */
 
 /**
  * Standard runCli function for integration tests
- * 
+ *
  * @param args - CLI arguments to pass to the dream command
  * @param cwd - Working directory relative to project root (optional)
  * @param mockExecution - Whether to enable execution mocking (default: true)
  * @returns Promise with exit code, stdout, and stderr
  */
 export async function runCli(
-  args: string[], 
-  cwd?: string, 
-  mockExecution: boolean = true
+  args: string[],
+  cwd?: string,
+  mockExecution: boolean = true,
 ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
   const projectRoot = Deno.cwd();
   const workingDir = cwd ? `${projectRoot}/${cwd}` : projectRoot;
@@ -45,16 +45,16 @@ export async function runCli(
 
 /**
  * E2E runCli function for end-to-end tests using the installed dream command
- * 
+ *
  * @param args - CLI arguments to pass to the dream command
  * @param cwd - Working directory for the command
  * @param mockExecution - Whether to enable execution mocking (default: false for E2E)
  * @returns Promise with exit code, stdout, and stderr
  */
 export async function runCliE2E(
-  args: string[], 
-  cwd: string, 
-  mockExecution: boolean = false
+  args: string[],
+  cwd: string,
+  mockExecution: boolean = false,
 ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
   const command = new Deno.Command("dream", {
     args,
@@ -79,21 +79,25 @@ export async function runCliE2E(
 
 /**
  * Specialized runCli function for --info command testing
- * 
+ *
  * @param cwd - Working directory for the command
  * @returns Promise with exit code, stdout, and stderr
  */
-export async function runCliInfo(cwd: string): Promise<{ exitCode: number; stdout: string; stderr: string }> {
+export async function runCliInfo(
+  cwd: string,
+): Promise<{ exitCode: number; stdout: string; stderr: string }> {
   return runCli(["--info"], cwd, false); // Info command doesn't need mocking
 }
 
 /**
  * Specialized E2E runCli function for --info command testing
- * 
+ *
  * @param cwd - Working directory for the command
  * @returns Promise with exit code, stdout, and stderr
  */
-export async function runCliInfoE2E(cwd: string): Promise<{ exitCode: number; stdout: string; stderr: string }> {
+export async function runCliInfoE2E(
+  cwd: string,
+): Promise<{ exitCode: number; stdout: string; stderr: string }> {
   const command = new Deno.Command("dream", {
     args: ["--info"],
     stdout: "piped",

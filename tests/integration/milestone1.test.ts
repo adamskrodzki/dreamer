@@ -109,7 +109,10 @@ Deno.test("Milestone 1 - CLI handles numeric task names", async () => {
 });
 
 Deno.test("Milestone 1 - CLI preserves additional arguments", async () => {
-  const result = await runCli(["test", "arg1", "arg2", "--debug"], "examples/simple-monorepo/packages/utils");
+  const result = await runCli(
+    ["test", "arg1", "arg2", "--debug"],
+    "examples/simple-monorepo/packages/utils",
+  );
 
   assertEquals(result.exitCode, 0, "Additional args should exit with code 0");
   assertStringIncludes(result.stdout, "Debug: Current project path:");

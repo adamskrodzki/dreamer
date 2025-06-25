@@ -10,20 +10,20 @@ async function createTestWorkspace(baseDir: string, files: Record<string, string
   for (const [filePath, content] of Object.entries(files)) {
     const fullPath = `${baseDir}/${filePath}`;
     const dir = fullPath.substring(0, fullPath.lastIndexOf("/"));
-    
+
     try {
       await Deno.mkdir(dir, { recursive: true });
     } catch {
       // Directory might already exist
     }
-    
+
     await Deno.writeTextFile(fullPath, content);
   }
 }
 
 Deno.test("Integration Info - shows configuration discovery information", async () => {
   const tempDir = await Deno.makeTempDir();
-  
+
   try {
     const config = {
       workspace: {
@@ -70,12 +70,12 @@ Deno.test("Integration Info - shows configuration discovery information", async 
     assertStringIncludes(result.stdout, "✅ Configuration Found:");
     assertStringIncludes(result.stdout, "✅ Workspace Root:");
     assertStringIncludes(result.stdout, "✅ Configuration Valid: 2 projects configured");
-    
+
     // Verify workspace projects
     assertStringIncludes(result.stdout, "Workspace Projects:");
     assertStringIncludes(result.stdout, "./packages/auth (tasks: test, build)");
     assertStringIncludes(result.stdout, "./services/api (tasks: test, dev)");
-    
+
     // Verify task defaults
     assertStringIncludes(result.stdout, "Task Defaults:");
     assertStringIncludes(result.stdout, "test: async=false, required=true, delay=0ms");
@@ -87,7 +87,7 @@ Deno.test("Integration Info - shows configuration discovery information", async 
 
 Deno.test("Integration Info - handles missing configuration gracefully", async () => {
   const tempDir = await Deno.makeTempDir();
-  
+
   try {
     const result = await runCli(["--info"], tempDir);
 
@@ -103,7 +103,7 @@ Deno.test("Integration Info - handles missing configuration gracefully", async (
 
 Deno.test("Integration Info - shows configuration from parent directory", async () => {
   const tempDir = await Deno.makeTempDir();
-  
+
   try {
     const config = {
       workspace: {
@@ -133,7 +133,7 @@ Deno.test("Integration Info - shows configuration from parent directory", async 
 
 Deno.test("Integration Info - handles invalid JSON configuration", async () => {
   const tempDir = await Deno.makeTempDir();
-  
+
   try {
     await createTestWorkspace(tempDir, {
       "dream.json": "{ invalid json syntax",
@@ -151,7 +151,7 @@ Deno.test("Integration Info - handles invalid JSON configuration", async () => {
 
 Deno.test("Integration Info - handles invalid configuration schema", async () => {
   const tempDir = await Deno.makeTempDir();
-  
+
   try {
     const invalidConfig = {
       // Missing workspace section
@@ -176,7 +176,7 @@ Deno.test("Integration Info - handles invalid configuration schema", async () =>
 
 Deno.test("Integration Info - shows complex configuration details", async () => {
   const tempDir = await Deno.makeTempDir();
-  
+
   try {
     const complexConfig = {
       workspace: {
@@ -243,12 +243,12 @@ Deno.test("Integration Info - shows complex configuration details", async () => 
 
     assertEquals(result.exitCode, 0);
     assertStringIncludes(result.stdout, "✅ Configuration Valid: 3 projects configured");
-    
+
     // Verify all services are listed with their tasks
     assertStringIncludes(result.stdout, "./services/database (tasks: test, start)");
     assertStringIncludes(result.stdout, "./services/auth (tasks: test, dev)");
     assertStringIncludes(result.stdout, "./services/api (tasks: test, dev)");
-    
+
     // Verify all task defaults are shown
     assertStringIncludes(result.stdout, "test: async=false, required=true, delay=0ms");
     assertStringIncludes(result.stdout, "dev: async=true, required=false, delay=1000ms");
@@ -260,7 +260,7 @@ Deno.test("Integration Info - shows complex configuration details", async () => 
 
 Deno.test("Integration Info - works with configuration without task defaults", async () => {
   const tempDir = await Deno.makeTempDir();
-  
+
   try {
     const configWithoutDefaults = {
       workspace: {
@@ -281,7 +281,7 @@ Deno.test("Integration Info - works with configuration without task defaults", a
     assertEquals(result.exitCode, 0);
     assertStringIncludes(result.stdout, "✅ Configuration Valid: 1 projects configured");
     assertStringIncludes(result.stdout, "./packages/utils (tasks: test, build)");
-    
+
     // Should not show task defaults section
     assertEquals(result.stdout.includes("Task Defaults:"), false);
   } finally {

@@ -1,5 +1,5 @@
 import { assertEquals } from "jsr:@std/assert@^1.0.0";
-import { TaskExecutor, MockProcessRunner } from "../../src/task_executor.ts";
+import { MockProcessRunner, TaskExecutor } from "../../src/task_executor.ts";
 import { TaskExecutionError } from "../../src/errors.ts";
 import type { TaskExecution } from "../../src/types.ts";
 
@@ -680,7 +680,7 @@ Deno.test("TaskExecutor - optional task failure continues execution", async () =
   assertEquals(results.length, 3);
   assertEquals(results[0].success, true);
   assertEquals(results[1].success, false); // Optional task failed
-  assertEquals(results[2].success, true);  // But execution continued
+  assertEquals(results[2].success, true); // But execution continued
 
   // Verify all 3 tasks were called
   const callLog = mockRunner.getCallLog();

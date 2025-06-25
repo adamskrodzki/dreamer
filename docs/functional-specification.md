@@ -7,6 +7,7 @@ Dream CLI is a Deno runtime-specific task dependency execution tool designed for
 ## Core Objectives
 
 ### 1. Dependency-Aware Task Execution
+
 **Problem**: When working on a project, you need to ensure its dependencies are properly set up and executed in the correct order.
 
 **Solution**: Configure which dependency projects should be executed when running a task on the current project.
@@ -14,6 +15,7 @@ Dream CLI is a Deno runtime-specific task dependency execution tool designed for
 **Example**: When you run `dream test` in `./services/api`, automatically execute tests for `./packages/auth` and `./packages/utils` first to ensure dependencies are working correctly.
 
 **Configuration Pattern**:
+
 ```json
 {
   "workspace": {
@@ -25,6 +27,7 @@ Dream CLI is a Deno runtime-specific task dependency execution tool designed for
 ```
 
 ### 2. Development Environment Orchestration (Service Dependency Startup)
+
 **Problem**: When developing a project, you need to manually start all the services it depends on.
 
 **Solution**: Configure which services should be started when you begin development.
@@ -32,14 +35,15 @@ Dream CLI is a Deno runtime-specific task dependency execution tool designed for
 **Example**: When you run `dream dev` from `./apps/web`, automatically start the database, auth service, and API service that the web app needs.
 
 **Configuration Pattern**:
+
 ```json
 {
   "workspace": {
     "./apps/web": {
       "dev": [
-        {"projectPath": "./services/database", "task": "start", "async": true},
-        {"projectPath": "./services/auth", "task": "dev", "async": true, "delay": 2000},
-        {"projectPath": "./services/api", "task": "dev", "async": true, "delay": 4000}
+        { "projectPath": "./services/database", "task": "start", "async": true },
+        { "projectPath": "./services/auth", "task": "dev", "async": true, "delay": 2000 },
+        { "projectPath": "./services/api", "task": "dev", "async": true, "delay": 4000 }
       ]
     }
   }
@@ -47,6 +51,7 @@ Dream CLI is a Deno runtime-specific task dependency execution tool designed for
 ```
 
 ### 3. Flexible Configuration
+
 Provide a JSON-based configuration system that supports both simple and complex dependency definitions with fine-grained control over execution behavior.
 
 ## Architecture
@@ -69,6 +74,7 @@ Provide a JSON-based configuration system that supports both simple and complex 
 ## Configuration Format
 
 ### File Location
+
 - Configuration file: `dream.json`
 - Located at workspace root
 - Automatically discovered by traversing parent directories
@@ -101,7 +107,9 @@ Provide a JSON-based configuration system that supports both simple and complex 
 ### Dependency Definition Formats
 
 #### Simple Format (String) - For Dependency Execution
+
 Use when you want to execute dependencies before the current project:
+
 ```json
 {
   "workspace": {
@@ -111,10 +119,13 @@ Use when you want to execute dependencies before the current project:
   }
 }
 ```
+
 **Meaning**: When testing `./services/api`, first test `./packages/auth` and `./packages/utils` (which are dependencies of the API service).
 
 #### Detailed Format (Object) - For Development Dependencies
+
 Use when you need to start services with specific configurations:
+
 ```json
 {
   "workspace": {
@@ -139,9 +150,11 @@ Use when you need to start services with specific configurations:
   }
 }
 ```
+
 **Meaning**: When running `dream dev` from `./apps/web`, start database immediately, then start API service after 3 seconds.
 
 #### Mixed Format - Combining Both Patterns
+
 ```json
 {
   "workspace": {
@@ -160,19 +173,23 @@ Use when you need to start services with specific configurations:
   }
 }
 ```
+
 **Meaning**:
+
 - For testing: Test dependencies first, then test the current project
 - For development: Start database service, then start API service development
 
 ### Configuration Properties
 
 #### Workspace Section
+
 - **Key**: Project path relative to workspace root
 - **Value**: Object mapping task names to arrays of:
   - **For all tasks**: Dependency projects that should be executed before the current project
   - Task names are arbitrary - the same dependency resolution logic applies regardless of task name
 
 #### Task Defaults Section
+
 - **async**: Whether task runs concurrently (default: false)
   - `true`: Task starts immediately without waiting for completion
   - `false`: Task runs synchronously, blocking subsequent tasks until completion
@@ -184,15 +201,18 @@ Use when you need to start services with specific configurations:
   - Useful for service startup orchestration (e.g., database before API)
 
 #### Recursive Section (Optional)
+
 - **Purpose**: Controls which projects/tasks use recursive dependency resolution
 - **Default**: Non-recursive resolution for all projects/tasks
 - **Structure**: Array of configuration objects
 
 **Configuration Object Properties:**
+
 - **project** (string, required): Relative path to project from workspace root
 - **tasks** (string[], required): Array of task names that should use recursive resolution
 
 **Example:**
+
 ```json
 {
   "recursive": [
@@ -209,11 +229,13 @@ Use when you need to start services with specific configurations:
 ```
 
 **Behavior:**
+
 - `./packages/core` uses recursive resolution for `test` and `build` tasks
 - `./services/auth` uses recursive resolution for `test` task only
 - All other projects/tasks use non-recursive resolution (default)
 
 #### Dependency Properties (Detailed Format)
+
 - **projectPath**: Target project path (required)
 - **task**: Task name to execute (defaults to current task name)
 - **async**: Override default async behavior
@@ -223,6 +245,7 @@ Use when you need to start services with specific configurations:
 ## Command Line Interface
 
 ### Basic Usage
+
 ```bash
 dream <task>              # Execute task and its dependencies
 dream --help              # Show help message
@@ -231,6 +254,7 @@ dream --debug             # Enable debug output
 ```
 
 ### Examples
+
 ```bash
 dream test                # Test configured dependencies + current project
 dream dev                 # Start required services + current project dev
@@ -241,20 +265,24 @@ dream e2e                 # Run e2e tests with configured setup
 ### Command Line Options
 
 #### Positional Arguments
+
 - `<task>`: Task name to execute (required)
 
 #### Flags
+
 - `--help, -h`: Display help information
 - `--version, -v`: Display version information
 - `--debug, -d`: Enable verbose debug output
 
 ### Exit Codes
+
 - `0`: All tasks completed successfully
 - `1`: One or more tasks failed or configuration error
 
 ## Execution Behavior
 
 ### Task Discovery Process
+
 1. Start from current working directory
 2. Traverse up directory tree to find `dream.json`
 3. Load and validate configuration
@@ -264,10 +292,12 @@ dream e2e                 # Run e2e tests with configured setup
 ### Dependency Resolution
 
 #### Resolution Modes
+
 1. **Non-Recursive (Default)**: Only processes immediate dependencies listed in configuration
 2. **Recursive**: Processes dependencies of dependencies (transitive dependencies) when enabled via `recursive` configuration
 
 #### Resolution Behavior
+
 1. **Explicit Dependencies Only**: Only processes dependencies explicitly configured in the `workspace` section
 2. **No Auto-Discovery**: Never automatically discovers or includes projects that depend on the current project
 3. **Configuration Check**: Determines if project/task should use recursive resolution based on `recursive` configuration array
@@ -279,16 +309,18 @@ dream e2e                 # Run e2e tests with configured setup
 7. **Circular Detection**: Circular dependencies are detected and reported in both modes
 
 ### Execution Order
+
 1. **All Tasks**:
    - Execute configured dependencies first (in dependency order)
    - Then execute the current project's task
    - Task names are arbitrary - same logic applies to test, dev, build, deploy, etc.
-3. **Async Handling**: Async dependencies run concurrently but respect delay settings
-4. **Failure Propagation**: Required task failures stop dependent execution
-5. **Task Deduplication**: Same task/project combination runs only once per execution
-6. **Execution Order**: Dependencies execute before dependents (depth-first resolution)
+2. **Async Handling**: Async dependencies run concurrently but respect delay settings
+3. **Failure Propagation**: Required task failures stop dependent execution
+4. **Task Deduplication**: Same task/project combination runs only once per execution
+5. **Execution Order**: Dependencies execute before dependents (depth-first resolution)
 
 ### Task Execution Details
+
 - **Working Directory**: Each task runs in its project's directory
 - **Command**: Executes `deno task <task-name>` in project directory
 - **Output**: Task output is displayed in real-time
@@ -296,6 +328,7 @@ dream e2e                 # Run e2e tests with configured setup
 ### Execution Order and Parameter Effects
 
 #### Execution Order Logic
+
 1. **Dependency Resolution**: Dependencies are resolved depth-first
 2. **Task Deduplication**: Each unique task/project combination executes only once
 3. **Execution Sequence**: Dependencies execute before their dependents
@@ -306,16 +339,19 @@ dream e2e                 # Run e2e tests with configured setup
 #### Parameter Effects in Detail
 
 **`async` Parameter:**
+
 - **`false` (default)**: Tasks execute sequentially, each waiting for the previous to complete
 - **`true`**: Tasks start immediately without waiting, allowing concurrent execution
 - **Mixed execution**: Sync tasks block until complete, async tasks run in parallel
 
 **`required` Parameter:**
+
 - **`true` (default)**: Task failure (non-zero exit code) stops all subsequent execution
 - **`false`**: Task failure is logged but execution continues with remaining tasks
 - **Applies to**: Both sync and async tasks
 
 **`delay` Parameter:**
+
 - **Applied**: Before task execution begins (after any previous task completes)
 - **Units**: Milliseconds
 - **Use case**: Service orchestration (e.g., wait for database to start before API)
@@ -324,38 +360,47 @@ dream e2e                 # Run e2e tests with configured setup
 #### Execution Examples
 
 **Sequential Execution (all sync):**
+
 ```
 Task A (sync, required) → Task B (sync, required) → Task C (sync, optional)
 ```
+
 If Task B fails, Task C is skipped.
 
 **Concurrent Execution (mixed async/sync):**
+
 ```
 Task A (sync, required) → [Task B (async) + Task C (async)] → Task D (sync)
 ```
+
 Task A completes first, then B and C run concurrently, then D waits for both B and C.
 
 **With Delays:**
+
 ```
 Task A (delay: 0ms) → wait 1000ms → Task B (delay: 1000ms) → wait 2000ms → Task C (delay: 2000ms)
 ```
+
 - **Error Handling**: Non-zero exit codes are treated as failures
 
 ## Error Handling
 
 ### Configuration Errors
+
 - Missing `dream.json`: Clear error message with search path
 - Invalid JSON: Syntax error details with line numbers
 - Schema validation: Specific property validation errors
 - Missing projects: Warning for referenced but non-existent projects
 
 ### Execution Errors
+
 - **Task Not Found**: List available tasks for the project
 - **Project Not Found**: Clear error with expected path
 - **Permission Errors**: Helpful messages about required Deno permissions
 - **Circular Dependencies**: Detailed cycle detection with path
 
 ### Recovery Strategies
+
 - **Optional Tasks**: Continue execution when non-required tasks fail
 - **Partial Success**: Report which tasks succeeded/failed
 - **Debug Mode**: Verbose logging for troubleshooting
@@ -363,17 +408,20 @@ Task A (delay: 0ms) → wait 1000ms → Task B (delay: 1000ms) → wait 2000ms �
 ## Integration Requirements
 
 ### Deno Workspace Compatibility
+
 - Works with standard Deno workspace structures
 - Respects `deno.json` task definitions
 - Compatible with Deno's module resolution
 - Supports Deno's permission model
 
 ### File System Requirements
+
 - **Permissions**: Requires `--allow-read` and `--allow-run`
 - **Structure**: Projects must have `deno.json` files
 - **Paths**: All paths are relative to workspace root
 
 ### Runtime Requirements
+
 - **Deno Version**: Compatible with Deno 1.40+
 - **Dependencies**: Uses only Deno standard library
 - **Performance**: Efficient for large monorepos (100+ projects)
@@ -381,9 +429,11 @@ Task A (delay: 0ms) → wait 1000ms → Task B (delay: 1000ms) → wait 2000ms �
 ## Use Cases
 
 ### Use Case 1: Dependency-Aware Testing
+
 **Scenario**: You want to test a service that depends on shared packages, ensuring all dependencies are tested first.
 
 **Configuration**:
+
 ```json
 {
   "workspace": {
@@ -395,6 +445,7 @@ Task A (delay: 0ms) → wait 1000ms → Task B (delay: 1000ms) → wait 2000ms �
 ```
 
 **Usage**:
+
 ```bash
 cd services/api-gateway
 dream test
@@ -402,17 +453,19 @@ dream test
 ```
 
 ### Use Case 2: Development Environment Setup
+
 **Scenario**: You want to develop a web application that requires a database, authentication service, and API service to be running.
 
 **Configuration**:
+
 ```json
 {
   "workspace": {
     "./apps/web": {
       "dev": [
-        {"projectPath": "./services/database", "task": "start", "async": true, "delay": 0},
-        {"projectPath": "./services/auth", "task": "dev", "async": true, "delay": 3000},
-        {"projectPath": "./services/api", "task": "dev", "async": true, "delay": 5000}
+        { "projectPath": "./services/database", "task": "start", "async": true, "delay": 0 },
+        { "projectPath": "./services/auth", "task": "dev", "async": true, "delay": 3000 },
+        { "projectPath": "./services/api", "task": "dev", "async": true, "delay": 5000 }
       ]
     }
   }
@@ -420,6 +473,7 @@ dream test
 ```
 
 **Usage**:
+
 ```bash
 cd apps/web
 dream dev
@@ -427,9 +481,11 @@ dream dev
 ```
 
 ### Use Case 3: Build Pipeline with Dependencies
+
 **Scenario**: You want to build a service that requires its dependencies to be built first.
 
 **Configuration**:
+
 ```json
 {
   "workspace": {
@@ -441,6 +497,7 @@ dream dev
 ```
 
 **Usage**:
+
 ```bash
 cd services/api
 dream build
@@ -448,9 +505,11 @@ dream build
 ```
 
 ### Use Case 4: Continuous Integration
+
 **Scenario**: Run comprehensive testing with detailed logging for CI/CD pipeline.
 
 **Usage**:
+
 ```bash
 # Test a service and its dependencies with debug output
 cd services/api

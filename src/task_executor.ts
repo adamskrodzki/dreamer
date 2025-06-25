@@ -1,4 +1,4 @@
-import type { TaskExecution, TaskResult, ProcessRunner, ProcessRunnerOptions } from "./types.ts";
+import type { ProcessRunner, ProcessRunnerOptions, TaskExecution, TaskResult } from "./types.ts";
 import { TaskExecutionError } from "./errors.ts";
 
 /**
@@ -47,7 +47,7 @@ export class DenoProcessRunner implements ProcessRunner {
       const stderrPromise = this.streamOutput(stderrReader, stderrChunks, true);
 
       // Wait for process completion and streaming to finish
-      const [{ code }, , ] = await Promise.all([
+      const [{ code }, ,] = await Promise.all([
         process.status,
         stdoutPromise,
         stderrPromise,
@@ -92,7 +92,7 @@ export class DenoProcessRunner implements ProcessRunner {
   private async streamOutput(
     reader: ReadableStreamDefaultReader<Uint8Array>,
     chunks: Uint8Array[],
-    isStderr: boolean
+    isStderr: boolean,
   ): Promise<void> {
     const decoder = new TextDecoder();
 
@@ -144,7 +144,11 @@ export class DenoProcessRunner implements ProcessRunner {
     return combined;
   }
 
-  private mockExecution(command: string, args: string[], options: ProcessRunnerOptions): Promise<TaskResult> {
+  private mockExecution(
+    command: string,
+    args: string[],
+    options: ProcessRunnerOptions,
+  ): Promise<TaskResult> {
     // Mock successful execution for testing
     return Promise.resolve({
       success: true,
@@ -174,10 +178,10 @@ export class TaskExecutor {
    */
   async executeTask(taskExecution: TaskExecution): Promise<TaskResult> {
     const { projectPath, taskName } = taskExecution;
-    
+
     // Resolve the absolute path to the project
     const projectDir = this.resolveProjectPath(projectPath);
-    
+
     // Execute deno task command
     const result = await this.processRunner.run("deno", ["task", taskName], {
       cwd: projectDir,
@@ -202,7 +206,7 @@ export class TaskExecutor {
       throw new TaskExecutionError(
         `Task ${taskExecution.id} failed with exit code ${result.exitCode}`,
         result.exitCode,
-        result.stderr
+        result.stderr,
       );
     }
 
@@ -242,7 +246,7 @@ export class TaskExecutor {
         throw new TaskExecutionError(
           `Unexpected error executing task ${taskExecution.id}: ${error}`,
           -1,
-          error instanceof Error ? error.message : String(error)
+          error instanceof Error ? error.message : String(error),
         );
       }
     }
@@ -263,7 +267,7 @@ export class TaskExecutor {
           throw new TaskExecutionError(
             `Async task failed: ${error}`,
             -1,
-            error instanceof Error ? error.message : String(error)
+            error instanceof Error ? error.message : String(error),
           );
         }
       }
@@ -278,7 +282,7 @@ export class TaskExecutor {
   private async executeTaskWithDelay(taskExecution: TaskExecution): Promise<TaskResult> {
     // Apply delay if specified (skip delays when mocking execution for tests)
     if (taskExecution.delay > 0 && Deno.env.get("DREAM_MOCK_EXECUTION") !== "true") {
-      await new Promise(resolve => setTimeout(resolve, taskExecution.delay));
+      await new Promise((resolve) => setTimeout(resolve, taskExecution.delay));
     }
 
     return await this.executeTask(taskExecution);
@@ -345,10 +349,10 @@ export class MockProcessRunner implements ProcessRunner {
 
   run(command: string, args: string[], options: ProcessRunnerOptions): Promise<TaskResult> {
     this.callLog.push({ command, args, options });
-    
+
     const key = `${command} ${args.join(" ")}`;
     const mockResult = this.mockResults.get(key);
-    
+
     if (mockResult) {
       return Promise.resolve(mockResult);
     }

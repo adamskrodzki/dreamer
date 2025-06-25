@@ -1,4 +1,10 @@
-import type { DreamConfig, ExecutionPlan, TaskExecution, Dependency, DetailedDependency } from "./types.ts";
+import type {
+  Dependency,
+  DetailedDependency,
+  DreamConfig,
+  ExecutionPlan,
+  TaskExecution,
+} from "./types.ts";
 import { CircularDependencyError } from "./errors.ts";
 
 export class DependencyResolver {
@@ -33,7 +39,7 @@ export class DependencyResolver {
     taskName: string,
     visited: Set<string>,
     visiting: Set<string>,
-    tasks: TaskExecution[]
+    tasks: TaskExecution[],
   ): void {
     const taskId = `${projectPath}:${taskName}`;
 
@@ -66,8 +72,18 @@ export class DependencyResolver {
     // Process each dependency first (depth-first)
     // We need to preserve the order of dependencies as specified in the configuration
     for (const dependency of dependencies) {
-      const { depProjectPath, depTaskName, dependencyOverrides } = this.parseDependency(dependency, taskName);
-      this.resolveDependenciesWithOverrides(depProjectPath, depTaskName, visited, visiting, tasks, dependencyOverrides);
+      const { depProjectPath, depTaskName, dependencyOverrides } = this.parseDependency(
+        dependency,
+        taskName,
+      );
+      this.resolveDependenciesWithOverrides(
+        depProjectPath,
+        depTaskName,
+        visited,
+        visiting,
+        tasks,
+        dependencyOverrides,
+      );
     }
 
     // Add the current task after its dependencies
@@ -83,7 +99,7 @@ export class DependencyResolver {
     visited: Set<string>,
     visiting: Set<string>,
     tasks: TaskExecution[],
-    dependencyOverrides?: Partial<DetailedDependency>
+    dependencyOverrides?: Partial<DetailedDependency>,
   ): void {
     const taskId = `${projectPath}:${taskName}`;
 
@@ -115,8 +131,16 @@ export class DependencyResolver {
 
     // Process each dependency first (depth-first)
     for (const dependency of dependencies) {
-      const { depProjectPath, depTaskName, dependencyOverrides: nestedOverrides } = this.parseDependency(dependency, taskName);
-      this.resolveDependenciesWithOverrides(depProjectPath, depTaskName, visited, visiting, tasks, nestedOverrides);
+      const { depProjectPath, depTaskName, dependencyOverrides: nestedOverrides } = this
+        .parseDependency(dependency, taskName);
+      this.resolveDependenciesWithOverrides(
+        depProjectPath,
+        depTaskName,
+        visited,
+        visiting,
+        tasks,
+        nestedOverrides,
+      );
     }
 
     // Add the current task after its dependencies with the provided overrides
@@ -154,12 +178,12 @@ export class DependencyResolver {
     projectPath: string,
     taskName: string,
     tasks: TaskExecution[],
-    dependencyOverrides?: Partial<DetailedDependency>
+    dependencyOverrides?: Partial<DetailedDependency>,
   ): void {
     const taskId = `${projectPath}:${taskName}`;
 
     // Check if task already exists (deduplication)
-    if (tasks.some(task => task.id === taskId)) {
+    if (tasks.some((task) => task.id === taskId)) {
       return;
     }
 
@@ -182,8 +206,6 @@ export class DependencyResolver {
 
     tasks.push(taskExecution);
   }
-
-
 
   /**
    * Resolves dependencies for testing pattern: execute configured dependencies + current project
@@ -226,7 +248,7 @@ export class DependencyResolver {
     projectPath: string,
     taskName: string,
     visited: Set<string>,
-    tasks: TaskExecution[]
+    tasks: TaskExecution[],
   ): void {
     // Get project configuration
     const projectConfig = this.config.workspace[projectPath];
@@ -241,7 +263,10 @@ export class DependencyResolver {
 
     // Process each dependency in order (non-recursive)
     for (const dependency of dependencies) {
-      const { depProjectPath, depTaskName, dependencyOverrides } = this.parseDependency(dependency, taskName);
+      const { depProjectPath, depTaskName, dependencyOverrides } = this.parseDependency(
+        dependency,
+        taskName,
+      );
       const taskId = `${depProjectPath}:${depTaskName}`;
 
       // Only add if not already processed

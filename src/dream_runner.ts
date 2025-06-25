@@ -1,5 +1,5 @@
-import type { ExecutionPlan, TaskResult, ProcessRunner } from "./types.ts";
-import { TaskExecutor, DenoProcessRunner } from "./task_executor.ts";
+import type { ExecutionPlan, ProcessRunner, TaskResult } from "./types.ts";
+import { DenoProcessRunner, TaskExecutor } from "./task_executor.ts";
 import { TaskExecutionError } from "./errors.ts";
 
 /**
@@ -40,7 +40,7 @@ export class DreamRunner {
 
     for (let i = 0; i < executionPlan.tasks.length; i++) {
       const taskExecution = executionPlan.tasks[i];
-      
+
       if (debug) {
         console.log(`\n[${i + 1}/${executionPlan.tasks.length}] Starting: ${taskExecution.id}`);
         if (taskExecution.delay > 0) {
@@ -65,25 +65,31 @@ export class DreamRunner {
           successfulTasks++;
           // Output is now streamed in real-time by DenoProcessRunner
           // Just show completion status with timing
-          console.log(`  ✅ ${taskExecution.projectPath} ${taskExecution.taskName} (${result.duration}ms)`);
+          console.log(
+            `  ✅ ${taskExecution.projectPath} ${taskExecution.taskName} (${result.duration}ms)`,
+          );
         } else {
           failedTasks++;
           // Error output is now streamed in real-time by DenoProcessRunner
           // Just show failure status
-          console.log(`  ❌ ${taskExecution.projectPath} ${taskExecution.taskName} failed (exit code ${result.exitCode})`);
+          console.log(
+            `  ❌ ${taskExecution.projectPath} ${taskExecution.taskName} failed (exit code ${result.exitCode})`,
+          );
 
           // If task is required and failed, stop execution
           if (taskExecution.required) {
             skippedTasks = executionPlan.tasks.length - i - 1;
             if (debug && skippedTasks > 0) {
-              console.log(`\n⏭️  Skipping ${skippedTasks} remaining tasks due to required task failure`);
+              console.log(
+                `\n⏭️  Skipping ${skippedTasks} remaining tasks due to required task failure`,
+              );
             }
             break;
           }
         }
       } catch (error) {
         failedTasks++;
-        
+
         if (error instanceof TaskExecutionError) {
           const errorResult: TaskResult = {
             success: false,
@@ -101,13 +107,17 @@ export class DreamRunner {
               console.log(`  Error: ${error.stderr.trim()}`);
             }
           } else {
-            console.log(`  ❌ ${taskExecution.projectPath} ${taskExecution.taskName} failed: ${error.message}`);
+            console.log(
+              `  ❌ ${taskExecution.projectPath} ${taskExecution.taskName} failed: ${error.message}`,
+            );
           }
 
           // Stop execution for required task failures
           skippedTasks = executionPlan.tasks.length - i - 1;
           if (debug && skippedTasks > 0) {
-            console.log(`\n⏭️  Skipping ${skippedTasks} remaining tasks due to required task failure`);
+            console.log(
+              `\n⏭️  Skipping ${skippedTasks} remaining tasks due to required task failure`,
+            );
           }
           break;
         } else {
@@ -149,6 +159,6 @@ export class DreamRunner {
    * Utility method to add delay
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

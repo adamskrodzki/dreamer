@@ -11,7 +11,7 @@ async function createTestWorkspace(baseDir: string, files: Record<string, string
   for (const [filePath, content] of Object.entries(files)) {
     const fullPath = `${baseDir}/${filePath}`;
     const dir = fullPath.substring(0, fullPath.lastIndexOf("/"));
-    
+
     // Create directory if it doesn't exist
     try {
       await Deno.mkdir(dir, { recursive: true });
@@ -20,14 +20,14 @@ async function createTestWorkspace(baseDir: string, files: Record<string, string
         throw error;
       }
     }
-    
+
     await Deno.writeTextFile(fullPath, content);
   }
 }
 
 Deno.test("Integration Task Execution - simple monorepo with successful tasks", async () => {
   const tempDir = await Deno.makeTempDir();
-  
+
   try {
     const config = {
       workspace: {
@@ -84,7 +84,7 @@ Deno.test("Integration Task Execution - simple monorepo with successful tasks", 
     // Load configuration
     const configManager = new ConfigManager();
     const loadedConfig = await configManager.loadFromPath(`${tempDir}/dream.json`);
-    
+
     // Resolve dependencies
     const resolver = new DependencyResolver(loadedConfig);
     const executionPlan = resolver.resolveTestPattern("./apps/web", "test");
@@ -99,7 +99,7 @@ Deno.test("Integration Task Execution - simple monorepo with successful tasks", 
     assertEquals(summary.successfulTasks, 2);
     assertEquals(summary.failedTasks, 0);
     assertEquals(summary.skippedTasks, 0);
-    
+
     // Verify all tasks completed successfully
     for (const result of summary.results) {
       assertEquals(result.success, true);
@@ -112,7 +112,7 @@ Deno.test("Integration Task Execution - simple monorepo with successful tasks", 
 
 Deno.test("Integration Task Execution - task failure stops execution", async () => {
   const tempDir = await Deno.makeTempDir();
-  
+
   try {
     const config = {
       workspace: {
@@ -151,11 +151,11 @@ Deno.test("Integration Task Execution - task failure stops execution", async () 
     // Load configuration
     const configManager = new ConfigManager();
     const loadedConfig = await configManager.loadFromPath(`${tempDir}/dream.json`);
-    
+
     // Resolve dependencies
     const resolver = new DependencyResolver(loadedConfig);
     const executionPlan = resolver.resolveTestPattern("./packages/core", "test");
-    
+
     // Execute with real process runner
     const runner = DreamRunner.create(tempDir);
     const summary = await runner.execute(executionPlan);
@@ -164,7 +164,7 @@ Deno.test("Integration Task Execution - task failure stops execution", async () 
     assertEquals(summary.successfulTasks, 0);
     assertEquals(summary.failedTasks, 1);
     assertEquals(summary.skippedTasks, 1); // Core task skipped due to utils failure
-    
+
     // Verify first task failed
     assertEquals(summary.results.length, 1);
     assertEquals(summary.results[0].success, false);
@@ -176,7 +176,7 @@ Deno.test("Integration Task Execution - task failure stops execution", async () 
 
 Deno.test("Integration Task Execution - optional task failure continues execution", async () => {
   const tempDir = await Deno.makeTempDir();
-  
+
   try {
     const config = {
       workspace: {
@@ -215,24 +215,24 @@ Deno.test("Integration Task Execution - optional task failure continues executio
     // Load configuration
     const configManager = new ConfigManager();
     const loadedConfig = await configManager.loadFromPath(`${tempDir}/dream.json`);
-    
+
     // Resolve dependencies
     const resolver = new DependencyResolver(loadedConfig);
     const executionPlan = resolver.resolveTestPattern("./packages/core", "test");
-    
+
     // Execute with real process runner
     const runner = DreamRunner.create(tempDir);
     const summary = await runner.execute(executionPlan);
 
     assertEquals(summary.totalTasks, 2);
     assertEquals(summary.successfulTasks, 1); // Core succeeds
-    assertEquals(summary.failedTasks, 1);     // Utils fails
-    assertEquals(summary.skippedTasks, 0);    // No tasks skipped
-    
+    assertEquals(summary.failedTasks, 1); // Utils fails
+    assertEquals(summary.skippedTasks, 0); // No tasks skipped
+
     // Verify both tasks executed
     assertEquals(summary.results.length, 2);
     assertEquals(summary.results[0].success, false); // utils failed
-    assertEquals(summary.results[1].success, true);  // core succeeded
+    assertEquals(summary.results[1].success, true); // core succeeded
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }
@@ -240,7 +240,7 @@ Deno.test("Integration Task Execution - optional task failure continues executio
 
 Deno.test("Integration Task Execution - with delays", async () => {
   const tempDir = await Deno.makeTempDir();
-  
+
   try {
     const config = {
       workspace: {
@@ -292,11 +292,11 @@ Deno.test("Integration Task Execution - with delays", async () => {
     // Load configuration
     const configManager = new ConfigManager();
     const loadedConfig = await configManager.loadFromPath(`${tempDir}/dream.json`);
-    
+
     // Resolve dependencies
     const resolver = new DependencyResolver(loadedConfig);
     const executionPlan = resolver.resolveDevPattern("./services/api", "dev");
-    
+
     // Execute with real process runner
     const startTime = Date.now();
     const runner = DreamRunner.create(tempDir);
@@ -306,7 +306,7 @@ Deno.test("Integration Task Execution - with delays", async () => {
     assertEquals(summary.totalTasks, 2);
     assertEquals(summary.successfulTasks, 2);
     assertEquals(summary.failedTasks, 0);
-    
+
     // Should take at least 150ms due to delays (100ms + 50ms)
     assertEquals(totalTime >= 150, true);
   } finally {
@@ -316,7 +316,7 @@ Deno.test("Integration Task Execution - with delays", async () => {
 
 Deno.test("Integration Task Execution - with mocked process runner", async () => {
   const tempDir = await Deno.makeTempDir();
-  
+
   try {
     const config = {
       workspace: {
@@ -338,11 +338,11 @@ Deno.test("Integration Task Execution - with mocked process runner", async () =>
     // Load configuration
     const configManager = new ConfigManager();
     const loadedConfig = await configManager.loadFromPath(`${tempDir}/dream.json`);
-    
+
     // Resolve dependencies
     const resolver = new DependencyResolver(loadedConfig);
     const executionPlan = resolver.resolveTestPattern("./packages/core", "test");
-    
+
     // Execute with mocked process runner
     const mockRunner = new MockProcessRunner();
     mockRunner.setMockResult("deno", ["task", "test"], {
@@ -359,7 +359,7 @@ Deno.test("Integration Task Execution - with mocked process runner", async () =>
     assertEquals(summary.totalTasks, 2);
     assertEquals(summary.successfulTasks, 2);
     assertEquals(summary.failedTasks, 0);
-    
+
     // Verify mock was called correctly
     const callLog = mockRunner.getCallLog();
     assertEquals(callLog.length, 2);
@@ -374,7 +374,7 @@ Deno.test("Integration Task Execution - with mocked process runner", async () =>
 
 Deno.test("Integration Task Execution - debug output", async () => {
   const tempDir = await Deno.makeTempDir();
-  
+
   try {
     const config = {
       workspace: {
@@ -397,11 +397,11 @@ Deno.test("Integration Task Execution - debug output", async () => {
     // Load configuration
     const configManager = new ConfigManager();
     const loadedConfig = await configManager.loadFromPath(`${tempDir}/dream.json`);
-    
+
     // Resolve dependencies
     const resolver = new DependencyResolver(loadedConfig);
     const executionPlan = resolver.resolveTestPattern("./packages/utils", "test");
-    
+
     // Capture console output
     const originalLog = console.log;
     let output = "";
@@ -414,7 +414,7 @@ Deno.test("Integration Task Execution - debug output", async () => {
       const summary = await runner.execute(executionPlan, true); // debug = true
 
       assertEquals(summary.successfulTasks, 1);
-      
+
       // Verify debug output
       assertStringIncludes(output, "Executing 1 tasks:");
       assertStringIncludes(output, "[1/1] Starting: ./packages/utils:test");

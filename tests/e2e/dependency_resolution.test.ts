@@ -210,7 +210,7 @@ Deno.test("E2E Dependency - Database test order verification (non-recursive)", a
   assertEquals(result.exitCode, 0, "Database test should succeed");
   assertStringIncludes(result.stdout, "Execution plan: 6 tasks");
 
-  const lines = result.stdout.split('\n').filter(line => line.includes('→'));
+  const lines = result.stdout.split("\n").filter((line) => line.includes("→"));
 
   // Verify execution order based on non-recursive dependency resolution:
   // Database depends on: ["./services/auth", "./services/api", "./services/notifications", "./apps/web", "./apps/mobile"]
@@ -311,19 +311,25 @@ Deno.test("E2E Task Execution - Real task execution with success", async () => {
 
     await Deno.writeTextFile(`${tempDir}/dream.json`, JSON.stringify(config, null, 2));
 
-    await Deno.writeTextFile(`${tempDir}/packages/utils/deno.json`, JSON.stringify({
-      name: "utils",
-      tasks: {
-        test: "echo 'Utils tests passed'",
-      },
-    }));
+    await Deno.writeTextFile(
+      `${tempDir}/packages/utils/deno.json`,
+      JSON.stringify({
+        name: "utils",
+        tasks: {
+          test: "echo 'Utils tests passed'",
+        },
+      }),
+    );
 
-    await Deno.writeTextFile(`${tempDir}/packages/core/deno.json`, JSON.stringify({
-      name: "core",
-      tasks: {
-        test: "echo 'Core tests passed'",
-      },
-    }));
+    await Deno.writeTextFile(
+      `${tempDir}/packages/core/deno.json`,
+      JSON.stringify({
+        name: "core",
+        tasks: {
+          test: "echo 'Core tests passed'",
+        },
+      }),
+    );
 
     // Run dream test from core package
     const result = await runCli(["test"], `${tempDir}/packages/core`);
@@ -368,19 +374,25 @@ Deno.test("E2E Task Execution - Real task execution with failure", async () => {
 
     await Deno.writeTextFile(`${tempDir}/dream.json`, JSON.stringify(config, null, 2));
 
-    await Deno.writeTextFile(`${tempDir}/packages/utils/deno.json`, JSON.stringify({
-      name: "utils",
-      tasks: {
-        test: "exit 1", // This will fail
-      },
-    }));
+    await Deno.writeTextFile(
+      `${tempDir}/packages/utils/deno.json`,
+      JSON.stringify({
+        name: "utils",
+        tasks: {
+          test: "exit 1", // This will fail
+        },
+      }),
+    );
 
-    await Deno.writeTextFile(`${tempDir}/packages/core/deno.json`, JSON.stringify({
-      name: "core",
-      tasks: {
-        test: "echo 'Core tests passed'",
-      },
-    }));
+    await Deno.writeTextFile(
+      `${tempDir}/packages/core/deno.json`,
+      JSON.stringify({
+        name: "core",
+        tasks: {
+          test: "echo 'Core tests passed'",
+        },
+      }),
+    );
 
     // Run dream test from core package
     const result = await runCli(["test"], `${tempDir}/packages/core`);
@@ -421,12 +433,15 @@ Deno.test("E2E Task Execution - Debug output shows execution details", async () 
 
     await Deno.writeTextFile(`${tempDir}/dream.json`, JSON.stringify(config, null, 2));
 
-    await Deno.writeTextFile(`${tempDir}/packages/utils/deno.json`, JSON.stringify({
-      name: "utils",
-      tasks: {
-        test: "echo 'Test output'",
-      },
-    }));
+    await Deno.writeTextFile(
+      `${tempDir}/packages/utils/deno.json`,
+      JSON.stringify({
+        name: "utils",
+        tasks: {
+          test: "echo 'Test output'",
+        },
+      }),
+    );
 
     // Run dream test with debug flag
     const result = await runCli(["test", "--debug"], `${tempDir}/packages/utils`);

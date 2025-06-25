@@ -1,15 +1,15 @@
 import { assertEquals, assertExists } from "@std/assert";
 import type {
-  DreamConfig,
-  ProjectConfig,
   Dependency,
   DetailedDependency,
-  TaskDefaults,
+  DreamConfig,
   ExecutionPlan,
+  ParsedArgs,
+  ProjectConfig,
+  RunnerOptions,
+  TaskDefaults,
   TaskExecution,
   TaskResult,
-  RunnerOptions,
-  ParsedArgs,
 } from "../../src/types.ts";
 
 Deno.test("Types - DreamConfig interface", () => {

@@ -10,20 +10,20 @@ async function createTestWorkspace(baseDir: string, files: Record<string, string
   for (const [filePath, content] of Object.entries(files)) {
     const fullPath = `${baseDir}/${filePath}`;
     const dir = fullPath.substring(0, fullPath.lastIndexOf("/"));
-    
+
     try {
       await Deno.mkdir(dir, { recursive: true });
     } catch {
       // Directory might already exist
     }
-    
+
     await Deno.writeTextFile(fullPath, content);
   }
 }
 
 Deno.test("Config Loading - loads valid configuration with debug output", async () => {
   const tempDir = await Deno.makeTempDir();
-  
+
   try {
     const validConfig = {
       workspace: {
@@ -61,7 +61,7 @@ Deno.test("Config Loading - loads valid configuration with debug output", async 
 
 Deno.test("Config Loading - finds config in parent directory", async () => {
   const tempDir = await Deno.makeTempDir();
-  
+
   try {
     const validConfig = {
       workspace: {
@@ -89,7 +89,7 @@ Deno.test("Config Loading - finds config in parent directory", async () => {
 
 Deno.test("Config Loading - handles missing configuration file", async () => {
   const tempDir = await Deno.makeTempDir();
-  
+
   try {
     const result = await runCli(["test"], tempDir);
 
@@ -103,7 +103,7 @@ Deno.test("Config Loading - handles missing configuration file", async () => {
 
 Deno.test("Config Loading - handles invalid JSON", async () => {
   const tempDir = await Deno.makeTempDir();
-  
+
   try {
     await createTestWorkspace(tempDir, {
       "dream.json": "{ invalid json syntax",
@@ -121,7 +121,7 @@ Deno.test("Config Loading - handles invalid JSON", async () => {
 
 Deno.test("Config Loading - handles invalid configuration schema", async () => {
   const tempDir = await Deno.makeTempDir();
-  
+
   try {
     const invalidConfig = {
       // Missing workspace section
@@ -146,7 +146,7 @@ Deno.test("Config Loading - handles invalid configuration schema", async () => {
 
 Deno.test("Config Loading - shows detailed error with debug flag", async () => {
   const tempDir = await Deno.makeTempDir();
-  
+
   try {
     await createTestWorkspace(tempDir, {
       "dream.json": "{ invalid json",
@@ -164,7 +164,7 @@ Deno.test("Config Loading - shows detailed error with debug flag", async () => {
 
 Deno.test("Config Loading - loads complex configuration with detailed dependencies", async () => {
   const tempDir = await Deno.makeTempDir();
-  
+
   try {
     const complexConfig = {
       workspace: {
@@ -204,8 +204,8 @@ Deno.test("Config Loading - loads complex configuration with detailed dependenci
     assertStringIncludes(result.stdout, "Debug: Configuration loaded successfully");
     assertStringIncludes(result.stdout, "./services/database");
     assertStringIncludes(result.stdout, "./services/auth");
-    assertStringIncludes(result.stdout, "\"async\": true");
-    assertStringIncludes(result.stdout, "\"delay\": 2000");
+    assertStringIncludes(result.stdout, '"async": true');
+    assertStringIncludes(result.stdout, '"delay": 2000');
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }
@@ -213,7 +213,7 @@ Deno.test("Config Loading - loads complex configuration with detailed dependenci
 
 Deno.test("Config Loading - works without debug flag", async () => {
   const tempDir = await Deno.makeTempDir();
-  
+
   try {
     const validConfig = {
       workspace: {

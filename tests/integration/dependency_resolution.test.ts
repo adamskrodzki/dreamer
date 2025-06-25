@@ -10,20 +10,20 @@ async function createTestWorkspace(baseDir: string, files: Record<string, string
   for (const [filePath, content] of Object.entries(files)) {
     const fullPath = `${baseDir}/${filePath}`;
     const dir = fullPath.substring(0, fullPath.lastIndexOf("/"));
-    
+
     try {
       await Deno.mkdir(dir, { recursive: true });
     } catch {
       // Directory might already exist
     }
-    
+
     await Deno.writeTextFile(fullPath, content);
   }
 }
 
 Deno.test("Integration Dependency - simple linear dependencies", async () => {
   const tempDir = await Deno.makeTempDir();
-  
+
   try {
     const config = {
       workspace: {
@@ -105,7 +105,7 @@ Deno.test("Integration Dependency - test pattern (corrected behavior)", async ()
 
 Deno.test("Integration Dependency - dev pattern with detailed dependencies", async () => {
   const tempDir = await Deno.makeTempDir();
-  
+
   try {
     const config = {
       workspace: {
@@ -162,7 +162,7 @@ Deno.test("Integration Dependency - dev pattern with detailed dependencies", asy
     assertStringIncludes(result.stdout, "./services/database:start");
     assertStringIncludes(result.stdout, "./services/api:dev");
     assertStringIncludes(result.stdout, "./apps/web:dev");
-    
+
     // Verify task properties are applied
     assertStringIncludes(result.stdout, "async: true, required: true, delay: 0ms");
     assertStringIncludes(result.stdout, "async: true, required: false, delay: 1000ms");
@@ -259,7 +259,7 @@ Deno.test("Integration Dependency - diamond dependency deduplication (non-recurs
 
 Deno.test("Integration Dependency - mixed dependency formats", async () => {
   const tempDir = await Deno.makeTempDir();
-  
+
   try {
     const config = {
       workspace: {
@@ -302,7 +302,7 @@ Deno.test("Integration Dependency - mixed dependency formats", async () => {
 
 Deno.test("Integration Dependency - project not in configuration", async () => {
   const tempDir = await Deno.makeTempDir();
-  
+
   try {
     const config = {
       workspace: {
@@ -330,7 +330,7 @@ Deno.test("Integration Dependency - project not in configuration", async () => {
 
 Deno.test("Integration Dependency - debug output shows execution plan details", async () => {
   const tempDir = await Deno.makeTempDir();
-  
+
   try {
     const config = {
       workspace: {
@@ -361,8 +361,14 @@ Deno.test("Integration Dependency - debug output shows execution plan details", 
     assertEquals(result.exitCode, 0);
     assertStringIncludes(result.stdout, "Debug: Current project path: ./packages/utils");
     assertStringIncludes(result.stdout, "Debug: Resolved 2 tasks:");
-    assertStringIncludes(result.stdout, "./packages/core:test (async: false, required: true, delay: 100ms)");
-    assertStringIncludes(result.stdout, "./packages/utils:test (async: false, required: true, delay: 100ms)");
+    assertStringIncludes(
+      result.stdout,
+      "./packages/core:test (async: false, required: true, delay: 100ms)",
+    );
+    assertStringIncludes(
+      result.stdout,
+      "./packages/utils:test (async: false, required: true, delay: 100ms)",
+    );
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }

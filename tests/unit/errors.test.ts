@@ -1,10 +1,10 @@
 import { assertEquals, assertInstanceOf } from "@std/assert";
 import {
-  DreamError,
-  ConfigError,
   CircularDependencyError,
-  TaskExecutionError,
+  ConfigError,
+  DreamError,
   ProjectNotFoundError,
+  TaskExecutionError,
   TaskNotFoundError,
 } from "../../src/errors.ts";
 
@@ -35,7 +35,7 @@ Deno.test("Errors - CircularDependencyError", () => {
 
   assertEquals(
     error.message,
-    "Circular dependency detected: ./packages/a -> ./packages/b -> ./packages/c -> ./packages/a"
+    "Circular dependency detected: ./packages/a -> ./packages/b -> ./packages/c -> ./packages/a",
   );
   assertEquals(error.code, "CIRCULAR_DEPENDENCY");
   assertEquals(error.name, "CircularDependencyError");
@@ -66,8 +66,16 @@ Deno.test("Errors - TaskExecutionError", () => {
 });
 
 Deno.test("Errors - TaskExecutionError with different exit codes", () => {
-  const error127 = new TaskExecutionError("Task build:compile failed with exit code 127", 127, "Build failed");
-  const error2 = new TaskExecutionError("Task test:unit failed with exit code 2", 2, "Tests failed");
+  const error127 = new TaskExecutionError(
+    "Task build:compile failed with exit code 127",
+    127,
+    "Build failed",
+  );
+  const error2 = new TaskExecutionError(
+    "Task test:unit failed with exit code 2",
+    2,
+    "Tests failed",
+  );
 
   assertEquals(error127.message, "Task build:compile failed with exit code 127");
   assertEquals(error127.code, "TASK_EXECUTION_ERROR");
@@ -105,7 +113,11 @@ Deno.test("Errors - TaskNotFoundError", () => {
 Deno.test("Errors - Error inheritance chain", () => {
   const configError = new ConfigError("Config test");
   const circularError = new CircularDependencyError(["a", "b", "a"]);
-  const taskError = new TaskExecutionError("Task task:id failed with exit code 1", 1, "Error message");
+  const taskError = new TaskExecutionError(
+    "Task task:id failed with exit code 1",
+    1,
+    "Error message",
+  );
   const projectError = new ProjectNotFoundError("./missing");
   const taskNotFoundError = new TaskNotFoundError("task", "./project");
 

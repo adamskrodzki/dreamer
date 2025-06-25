@@ -1,10 +1,7 @@
 {
   "name": "@JinxCodesAIi/dreamer-cli",
   "version": "1.0.0",
-  "exports": {
-    ".": "./src/main.ts",
-    "./lib": "./src/dream_runner.ts"
-  },
+  "exports": "./src/main.ts",
   "tasks": {
     "dev": "deno run --allow-read --allow-run --allow-env --watch src/main.ts",
     "test": "deno test --allow-read --allow-run --allow-env --allow-write",

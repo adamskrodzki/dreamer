@@ -7,6 +7,7 @@ This document provides practical examples of using Dream CLI in various monorepo
 ## Example 1: Simple Package Monorepo
 
 ### Workspace Structure
+
 ```
 my-workspace/
 ├── dream.json
@@ -27,6 +28,7 @@ my-workspace/
 ```
 
 ### Configuration (dream.json)
+
 ```json
 {
   "workspace": {
@@ -116,6 +118,7 @@ my-workspace/
 ```
 
 ### Usage Examples
+
 ```bash
 # Test utils and its configured test targets (core, ui, web)
 cd packages/utils
@@ -133,12 +136,14 @@ dream dev
 ### Execution Flow Examples
 
 **When running `dream test` from `packages/utils`:**
+
 1. `./packages/utils` test (self)
 2. `./packages/core` test (configured target)
 3. `./packages/ui` test (configured target)
 4. `./apps/web` test (configured target)
 
 **When running `dream dev` from `apps/web`:**
+
 1. `./packages/utils` build (dependency)
 2. `./packages/core` dev (dependency, 1s delay)
 3. `./packages/ui` dev (dependency, 2s delay)
@@ -147,6 +152,7 @@ dream dev
 ## Example 2: Microservices Architecture
 
 ### Workspace Structure
+
 ```
 microservices/
 ├── dream.json
@@ -173,11 +179,18 @@ microservices/
 ```
 
 ### Configuration (dream.json)
+
 ```json
 {
   "workspace": {
     "./services/database": {
-      "test": ["./services/auth", "./services/api", "./services/notifications", "./apps/web", "./apps/mobile"],
+      "test": [
+        "./services/auth",
+        "./services/api",
+        "./services/notifications",
+        "./apps/web",
+        "./apps/mobile"
+      ],
       "dev": [],
       "build": []
     },
@@ -316,6 +329,7 @@ microservices/
 ```
 
 ### Usage Examples
+
 ```bash
 # Test database and all services that use it
 cd services/database
@@ -339,7 +353,9 @@ dream test
 ```
 
 ### Development Workflow
+
 **When running `dream test` from `services/database`:**
+
 1. Tests database service (self)
 2. Tests auth service (uses database)
 3. Tests API service (uses database)
@@ -348,6 +364,7 @@ dream test
 6. Tests mobile app (uses database)
 
 **When running `dream dev` from `apps/web`:**
+
 1. Database service starts (async, no delay)
 2. Auth service starts (async, 2s delay)
 3. API service starts (async, 4s delay)
@@ -355,6 +372,7 @@ dream test
 5. Web app starts (after all dependencies are running)
 
 ### Recursive Configuration Explanation
+
 The `recursive` configuration enables deep dependency resolution for specific projects and tasks:
 
 ```json
@@ -367,6 +385,7 @@ The `recursive` configuration enables deep dependency resolution for specific pr
 ```
 
 **Effect**: When running `dream test` from `./services/auth`:
+
 - **Without recursive**: Tests auth → api → web (only immediate dependencies)
 - **With recursive**: Tests auth → api → web, and if api has dependencies, those are tested too
 
@@ -375,6 +394,7 @@ This ensures comprehensive testing when changes to auth service could have casca
 ## Example 3: Full-Stack Application with Build Pipeline
 
 ### Workspace Structure
+
 ```
 fullstack-app/
 ├── dream.json
@@ -405,6 +425,7 @@ fullstack-app/
 ```
 
 ### Configuration (dream.json)
+
 ```json
 {
   "workspace": {
@@ -551,6 +572,7 @@ fullstack-app/
 ```
 
 ### Usage Examples
+
 ```bash
 # Full development environment
 cd frontend/web
@@ -573,6 +595,7 @@ dream dev
 ## Example 4: Testing-Focused Configuration
 
 ### Configuration for Comprehensive Testing
+
 ```json
 {
   "workspace": {
@@ -621,6 +644,7 @@ dream dev
 ```
 
 ### Testing Workflows
+
 ```bash
 # Run all tests for web app
 cd apps/web
@@ -639,6 +663,7 @@ dream e2e-test
 ## Example 5: CI/CD Pipeline Configuration
 
 ### Configuration for Build Pipeline
+
 ```json
 {
   "workspace": {
@@ -694,6 +719,7 @@ dream e2e-test
 ```
 
 ### CI/CD Workflows
+
 ```bash
 # Full CI pipeline
 dream lint    # Lint all code in parallel
@@ -706,6 +732,7 @@ dream deploy  # Deploy to staging/production
 ## Common Patterns
 
 ### Pattern 1: Shared Library Dependencies
+
 ```json
 {
   "workspace": {
@@ -722,6 +749,7 @@ dream deploy  # Deploy to staging/production
 ```
 
 ### Pattern 2: Service Mesh Startup
+
 ```json
 {
   "workspace": {
@@ -746,6 +774,7 @@ dream deploy  # Deploy to staging/production
 ```
 
 ### Pattern 3: Database Migration Dependencies
+
 ```json
 {
   "workspace": {
@@ -778,23 +807,25 @@ dream deploy  # Deploy to staging/production
 ## Understanding Dependencies vs Dependents
 
 ### Key Concept
+
 Dream CLI should only execute **explicitly configured dependencies**, never auto-discover dependent projects.
 
 ### Configuration Patterns
 
 **Pattern 1: Dependency-based Configuration**
 Configure each project to list its dependencies:
+
 ```json
 {
   "workspace": {
     "./utils": {
-      "test": []  // No dependencies
+      "test": [] // No dependencies
     },
     "./api": {
-      "test": ["./utils"]  // api depends on utils
+      "test": ["./utils"] // api depends on utils
     },
     "./web": {
-      "test": ["./utils", "./api"]  // web depends on both
+      "test": ["./utils", "./api"] // web depends on both
     }
   }
 }
@@ -802,29 +833,33 @@ Configure each project to list its dependencies:
 
 **Pattern 2: Client Impact Testing Configuration**
 Configure shared libraries to list their clients for testing:
+
 ```json
 {
   "workspace": {
     "./utils": {
-      "test": ["./api", "./web"]  // Test clients when utils changes
+      "test": ["./api", "./web"] // Test clients when utils changes
     },
     "./api": {
-      "test": ["./web"]  // Test web when api changes
+      "test": ["./web"] // Test web when api changes
     },
     "./web": {
-      "test": []  // No clients to test
+      "test": [] // No clients to test
     }
   }
 }
 ```
 
 ### Correct CLI Behavior
+
 **Both patterns are valid configurations**, but the CLI should:
+
 - Only execute the explicitly configured dependencies/targets
 - Never auto-discover additional projects beyond what's configured
 - Execute tasks in the order: configured dependencies → current project
 
 ### What Dream CLI Should NOT Do
+
 - Auto-discover projects that depend on the current project
 - Execute tasks for projects not explicitly listed in configuration
 - Guess relationships between projects

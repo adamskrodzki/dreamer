@@ -7,7 +7,7 @@ Dream CLI is a simple, focused tool for dependency-aware task execution in Deno 
 ## Core Principles
 
 1. **Simplicity First**: Minimal abstractions, clear code flow
-2. **Single Responsibility**: Each module has one clear purpose  
+2. **Single Responsibility**: Each module has one clear purpose
 3. **Easy Testing**: Simple mocking and clear interfaces
 4. **Practical Design**: Solve real problems without unnecessary complexity
 
@@ -36,6 +36,7 @@ Dream CLI is a simple, focused tool for dependency-aware task execution in Deno 
 ## Module Structure
 
 ### 1. CLI Entry (`src/main.ts`)
+
 **Purpose**: Parse arguments and delegate to DreamRunner
 
 ```typescript
@@ -47,12 +48,13 @@ export async function main(args: string[]): Promise<number> {
 ```
 
 ### 2. Dream Runner (`src/dream_runner.ts`)
+
 **Purpose**: Main orchestrator - coordinates all operations
 
 ```typescript
 export class DreamRunner {
   constructor(private options: RunnerOptions) {}
-  
+
   async execute(taskName: string): Promise<number> {
     const config = await this.configManager.load();
     const currentProject = this.getCurrentProject();
@@ -63,6 +65,7 @@ export class DreamRunner {
 ```
 
 ### 3. Config Manager (`src/config_manager.ts`)
+
 **Purpose**: Load and validate dream.json configuration
 
 ```typescript
@@ -95,6 +98,7 @@ export class ConfigManager {
 ```
 
 ### 4. Dependency Resolver (`src/dependency_resolver.ts`)
+
 **Purpose**: Build execution plan from configuration
 
 ```typescript
@@ -119,6 +123,7 @@ export class DependencyResolver {
 ```
 
 ### 5. Task Executor (`src/task_executor.ts`)
+
 **Purpose**: Execute tasks according to the plan with async/sync orchestration
 
 ```typescript
@@ -216,19 +221,19 @@ export class DreamError extends Error {
 
 export class ConfigError extends DreamError {
   constructor(message: string) {
-    super(message, 'CONFIG_ERROR');
+    super(message, "CONFIG_ERROR");
   }
 }
 
 export class CircularDependencyError extends DreamError {
   constructor(cycle: string[]) {
-    super(`Circular dependency detected: ${cycle.join(' -> ')}`, 'CIRCULAR_DEPENDENCY');
+    super(`Circular dependency detected: ${cycle.join(" -> ")}`, "CIRCULAR_DEPENDENCY");
   }
 }
 
 export class TaskExecutionError extends DreamError {
   constructor(taskId: string, exitCode: number) {
-    super(`Task ${taskId} failed with exit code ${exitCode}`, 'TASK_EXECUTION_ERROR');
+    super(`Task ${taskId} failed with exit code ${exitCode}`, "TASK_EXECUTION_ERROR");
   }
 }
 ```
@@ -236,6 +241,7 @@ export class TaskExecutionError extends DreamError {
 ## Testing Strategy
 
 ### Test Structure
+
 ```
 tests/
 ├── unit/                    # Unit tests for individual modules
@@ -259,6 +265,7 @@ tests/
 ### Testing Approach
 
 #### 1. Unit Tests - Mock Everything External
+
 ```typescript
 // tests/unit/task_executor.test.ts
 import { assertEquals } from "https://deno.land/std/testing/asserts.ts";
@@ -266,37 +273,63 @@ import { TaskExecutor } from "../src/task_executor.ts";
 
 class MockProcessRunner {
   private expectations: Map<string, TaskResult> = new Map();
-  
+
   expect(taskId: string, result: TaskResult) {
     this.expectations.set(taskId, result);
   }
-  
+
   async run(command: string[], cwd: string): Promise<TaskResult> {
-    const taskId = `${cwd}:${command.join(' ')}`;
-    return this.expectations.get(taskId) || { success: false, exitCode: 1, output: '', duration: 0 };
+    const taskId = `${cwd}:${command.join(" ")}`;
+    return this.expectations.get(taskId) ||
+      { success: false, exitCode: 1, output: "", duration: 0 };
   }
 }
 
 Deno.test("TaskExecutor - executes tasks in correct order", async () => {
   const mockRunner = new MockProcessRunner();
   const executor = new TaskExecutor(mockRunner);
-  
-  mockRunner.expect("./packages/utils:deno task build", { success: true, exitCode: 0, output: "Built utils", duration: 100 });
-  mockRunner.expect("./packages/auth:deno task build", { success: true, exitCode: 0, output: "Built auth", duration: 150 });
-  
+
+  mockRunner.expect("./packages/utils:deno task build", {
+    success: true,
+    exitCode: 0,
+    output: "Built utils",
+    duration: 100,
+  });
+  mockRunner.expect("./packages/auth:deno task build", {
+    success: true,
+    exitCode: 0,
+    output: "Built auth",
+    duration: 150,
+  });
+
   const plan: ExecutionPlan = {
     tasks: [
-      { id: "utils:build", projectPath: "./packages/utils", taskName: "build", async: false, required: true, delay: 0 },
-      { id: "auth:build", projectPath: "./packages/auth", taskName: "build", async: false, required: true, delay: 0 }
-    ]
+      {
+        id: "utils:build",
+        projectPath: "./packages/utils",
+        taskName: "build",
+        async: false,
+        required: true,
+        delay: 0,
+      },
+      {
+        id: "auth:build",
+        projectPath: "./packages/auth",
+        taskName: "build",
+        async: false,
+        required: true,
+        delay: 0,
+      },
+    ],
   };
-  
+
   const result = await executor.execute(plan);
   assertEquals(result, 0);
 });
 ```
 
 #### 2. Integration Tests - Test Component Interactions
+
 ```typescript
 // tests/integration/simple_workspace.test.ts
 import { assertEquals } from "https://deno.land/std/testing/asserts.ts";
@@ -310,11 +343,11 @@ Deno.test("Integration - simple linear dependencies", async () => {
     "dream.json": {
       workspace: {
         "./packages/utils": { test: ["./packages/auth"] },
-        "./packages/auth": { test: [] }
-      }
+        "./packages/auth": { test: [] },
+      },
     },
     "packages/utils/deno.json": { tasks: { test: "echo 'Testing utils'" } },
-    "packages/auth/deno.json": { tasks: { test: "echo 'Testing auth'" } }
+    "packages/auth/deno.json": { tasks: { test: "echo 'Testing auth'" } },
   });
 
   const runner = new DreamRunner({ workspaceRoot: tempDir });
@@ -334,6 +367,7 @@ Deno.test("Integration - simple linear dependencies", async () => {
 ```
 
 #### 3. E2E Tests - Real Deno Processes
+
 ```typescript
 // tests/e2e/microservices.test.ts
 import { assertEquals } from "https://deno.land/std/testing/asserts.ts";
@@ -349,7 +383,7 @@ class E2ETestManager {
       cwd: projectPath,
       env: { PORT: port.toString() },
       stdout: "piped",
-      stderr: "piped"
+      stderr: "piped",
     }).spawn();
 
     this.processes.push(process);
@@ -388,7 +422,7 @@ class E2ETestManager {
 class ServiceHandle {
   constructor(
     private process: Deno.ChildProcess,
-    public port: number
+    public port: number,
   ) {}
 
   async waitForReady(timeoutMs = 5000): Promise<void> {
@@ -400,7 +434,7 @@ class ServiceHandle {
       } catch {
         // Service not ready yet
       }
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
     throw new Error(`Service on port ${this.port} not ready within ${timeoutMs}ms`);
   }
@@ -431,7 +465,6 @@ Deno.test("E2E - microservices startup orchestration", async () => {
     assertEquals(dbHealth.status, 200);
     assertEquals(authHealth.status, 200);
     assertEquals(apiHealth.status, 200);
-
   } finally {
     await testManager.cleanup();
     await Deno.remove(tempDir, { recursive: true });
@@ -442,7 +475,9 @@ Deno.test("E2E - microservices startup orchestration", async () => {
 ### Test Scenarios
 
 #### Scenario 1: Simple Package Dependencies
+
 **Workspace**: `tests/fixtures/simple/`
+
 ```
 simple/
 ├── dream.json
@@ -455,6 +490,7 @@ simple/
 ```
 
 **Configuration**:
+
 ```json
 {
   "workspace": {
@@ -470,23 +506,26 @@ simple/
 ```
 
 **Test Cases**:
+
 - Client impact testing: `utils` change tests all dependents
 - Development setup: `auth` dev starts `utils` first
 - Error propagation: Failed `utils` test stops dependent tests
 - Task deduplication: Same task/project runs only once
 
 #### Scenario 2: Async Service Dependencies
+
 **Workspace**: `tests/fixtures/microservices/`
 
 **Configuration**:
+
 ```json
 {
   "workspace": {
     "./apps/web": {
       "dev": [
-        {"projectPath": "./services/database", "task": "start", "async": true, "delay": 0},
-        {"projectPath": "./services/auth", "task": "dev", "async": true, "delay": 2000},
-        {"projectPath": "./services/api", "task": "dev", "async": true, "delay": 4000}
+        { "projectPath": "./services/database", "task": "start", "async": true, "delay": 0 },
+        { "projectPath": "./services/auth", "task": "dev", "async": true, "delay": 2000 },
+        { "projectPath": "./services/api", "task": "dev", "async": true, "delay": 4000 }
       ]
     }
   }
@@ -494,15 +533,18 @@ simple/
 ```
 
 **Test Cases**:
+
 - Async execution: Services start concurrently with delays
 - Health checks: Wait for service readiness before dependents
 - Graceful shutdown: Clean process termination
 - Port management: Avoid port conflicts in tests
 
 #### Scenario 3: Error Handling
+
 **Workspace**: `tests/fixtures/error_cases/`
 
 **Test Cases**:
+
 - Missing `dream.json`: Clear error message
 - Invalid JSON: Syntax error with line numbers
 - Circular dependencies: Detect and report cycles
@@ -513,6 +555,7 @@ simple/
 ### Mock Strategies
 
 #### 1. Process Runner Mock
+
 ```typescript
 export class MockProcessRunner {
   private expectations = new Map<string, TaskResult>();
@@ -526,7 +569,7 @@ export class MockProcessRunner {
     const call = { args, cwd, timestamp: Date.now() };
     this.calls.push(call);
 
-    const key = `${cwd}:${args.join(' ')}`;
+    const key = `${cwd}:${args.join(" ")}`;
     const result = this.expectations.get(key);
 
     if (!result) {
@@ -535,7 +578,7 @@ export class MockProcessRunner {
 
     // Simulate execution time
     if (result.duration > 0) {
-      await new Promise(resolve => setTimeout(resolve, result.duration));
+      await new Promise((resolve) => setTimeout(resolve, result.duration));
     }
 
     return result;
@@ -559,7 +602,7 @@ class TaskExpectation {
   constructor(
     private mock: MockProcessRunner,
     private projectPath: string,
-    private taskName: string
+    private taskName: string,
   ) {}
 
   succeeds(output = "", duration = 0): TaskExpectation {
@@ -568,7 +611,7 @@ class TaskExpectation {
       success: true,
       exitCode: 0,
       output,
-      duration
+      duration,
     });
     return this;
   }
@@ -580,7 +623,7 @@ class TaskExpectation {
       exitCode,
       output: "",
       error,
-      duration
+      duration,
     });
     return this;
   }
@@ -588,6 +631,7 @@ class TaskExpectation {
 ```
 
 #### 2. File System Mock
+
 ```typescript
 export class MockFileSystem {
   private files = new Map<string, string>();
@@ -613,6 +657,7 @@ export class MockFileSystem {
 ### Test Utilities
 
 #### Workspace Builder
+
 ```typescript
 export class TestWorkspaceBuilder {
   private config: any = { workspace: {} };
@@ -624,7 +669,7 @@ export class TestWorkspaceBuilder {
 
     // Add deno.json
     this.files.set(`${path}/deno.json`, {
-      tasks: options.tasks || {}
+      tasks: options.tasks || {},
     });
 
     return this;
@@ -634,7 +679,7 @@ export class TestWorkspaceBuilder {
     // Write dream.json
     await Deno.writeTextFile(
       `${tempDir}/dream.json`,
-      JSON.stringify(this.config, null, 2)
+      JSON.stringify(this.config, null, 2),
     );
 
     // Write all project files
@@ -665,6 +710,7 @@ export class TestWorkspace {
 ## Implementation Plan
 
 ### Phase 1: Core Implementation
+
 1. **CLI Entry** (`src/main.ts`) - Argument parsing and error handling
 2. **Types** (`src/types.ts`) - All interfaces and type definitions
 3. **Config Manager** (`src/config_manager.ts`) - Load and validate configuration
@@ -672,17 +718,20 @@ export class TestWorkspace {
 5. **Task Executor** (`src/task_executor.ts`) - Execute tasks with proper async handling
 
 ### Phase 2: Testing Infrastructure
+
 1. **Mock Classes** - Process runner, file system mocks
 2. **Test Utilities** - Workspace builder, assertion helpers
 3. **Unit Tests** - Test each module in isolation
 4. **Integration Tests** - Test component interactions
 
 ### Phase 3: E2E Testing
+
 1. **E2E Test Manager** - Process lifecycle management
 2. **Test Scenarios** - Real workspace testing
 3. **Performance Tests** - Large workspace handling
 
 ### Phase 4: Polish
+
 1. **Error Handling** - Comprehensive error messages
 2. **Logging** - Debug output and progress reporting
 3. **Documentation** - Usage examples and API docs
@@ -695,6 +744,7 @@ This simplified architecture focuses on solving the actual problem without unnec
 ### Deno Configuration
 
 #### Project Structure
+
 ```
 dreamer/
 ├── deno.json                 # Deno configuration
@@ -717,6 +767,7 @@ dreamer/
 ```
 
 #### `deno.json` Configuration
+
 ```json
 {
   "name": "@dream/cli",
@@ -768,6 +819,7 @@ dreamer/
 ```
 
 #### `jsr.json` Configuration for Publishing
+
 ```json
 {
   "name": "@dream/cli",
@@ -804,6 +856,7 @@ dreamer/
 ### Deno-Specific Implementation Details
 
 #### Process Execution with Deno
+
 ```typescript
 // src/task_executor.ts - Deno process handling
 export class TaskExecutor {
@@ -812,12 +865,12 @@ export class TaskExecutor {
 
     for (const task of plan.tasks) {
       if (task.delay > 0) {
-        await new Promise(resolve => setTimeout(resolve, task.delay));
+        await new Promise((resolve) => setTimeout(resolve, task.delay));
       }
 
       if (task.async) {
         // Start async task without waiting
-        this.runTaskAsync(task).then(result => results.push(result));
+        this.runTaskAsync(task).then((result) => results.push(result));
       } else {
         // Run synchronously
         const result = await this.runTask(task);
@@ -832,7 +885,7 @@ export class TaskExecutor {
     // Wait for all async tasks to complete
     // Implementation details...
 
-    return results.every(r => r.success) ? 0 : 1;
+    return results.every((r) => r.success) ? 0 : 1;
   }
 
   private async runTask(task: TaskExecution): Promise<TaskResult> {
@@ -844,7 +897,7 @@ export class TaskExecutor {
         cwd: task.projectPath,
         stdout: "piped",
         stderr: "piped",
-        env: Deno.env.toObject() // Pass through environment variables
+        env: Deno.env.toObject(), // Pass through environment variables
       });
 
       const process = command.spawn();
@@ -858,16 +911,15 @@ export class TaskExecutor {
         exitCode: code,
         output,
         error: error || undefined,
-        duration: Date.now() - startTime
+        duration: Date.now() - startTime,
       };
-
     } catch (error) {
       return {
         success: false,
         exitCode: 1,
         output: "",
         error: error.message,
-        duration: Date.now() - startTime
+        duration: Date.now() - startTime,
       };
     }
   }
@@ -875,9 +927,10 @@ export class TaskExecutor {
 ```
 
 #### File System Operations with Deno
+
 ```typescript
 // src/config_manager.ts - Deno file system usage
-import { join, dirname } from "@std/path";
+import { dirname, join } from "@std/path";
 import { exists } from "@std/fs";
 
 export class ConfigManager {
@@ -912,7 +965,9 @@ export class ConfigManager {
       const parentDir = dirname(currentDir);
       if (parentDir === currentDir) {
         // Reached root directory
-        throw new ConfigError("No dream.json configuration file found in current directory or any parent directory");
+        throw new ConfigError(
+          "No dream.json configuration file found in current directory or any parent directory",
+        );
       }
 
       currentDir = parentDir;
@@ -924,6 +979,7 @@ export class ConfigManager {
 ### Installation & Usage
 
 #### Development Setup
+
 ```bash
 # Clone the repository
 git clone https://github.com/your-username/dreamer.git
@@ -943,6 +999,7 @@ dream test
 ```
 
 #### Publishing to JSR
+
 ```bash
 # Ensure all tests pass
 deno task test
@@ -959,6 +1016,7 @@ deno publish
 ```
 
 #### Installation from JSR
+
 ```bash
 # Install globally
 deno install -A jsr:@dream/cli
@@ -973,10 +1031,12 @@ import { DreamRunner } from "jsr:@dream/cli/lib";
 ### Required Deno Permissions
 
 The CLI requires these permissions:
+
 - `--allow-read`: Read configuration files and project structures
 - `--allow-run`: Execute `deno task` commands in project directories
 - `--allow-env`: Access environment variables for child processes
 
 Optional permissions:
+
 - `--allow-write`: For E2E tests that create temporary files
 - `--allow-net`: For E2E tests with network services

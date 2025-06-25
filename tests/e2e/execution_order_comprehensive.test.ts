@@ -6,7 +6,7 @@ const EXECUTION_ORDER_EXAMPLE = join(Deno.cwd(), "examples", "execution-order-de
 
 async function runDreamCommand(
   args: string[],
-  cwd: string = EXECUTION_ORDER_EXAMPLE
+  cwd: string = EXECUTION_ORDER_EXAMPLE,
 ): Promise<{ success: boolean; output: string; error: string }> {
   const command = new Deno.Command("deno", {
     args: ["run", "--allow-read", "--allow-run", "--allow-env", CLI_PATH, ...args],
@@ -27,7 +27,10 @@ async function runDreamCommand(
 }
 
 Deno.test("E2E Execution Order - Service orchestration with delays", async () => {
-  const result = await runDreamCommand(["dev", "--debug"], join(EXECUTION_ORDER_EXAMPLE, "apps", "web"));
+  const result = await runDreamCommand(
+    ["dev", "--debug"],
+    join(EXECUTION_ORDER_EXAMPLE, "apps", "web"),
+  );
 
   assertEquals(result.success, true, `Command failed: ${result.error}`);
 
@@ -46,7 +49,10 @@ Deno.test("E2E Execution Order - Service orchestration with delays", async () =>
 });
 
 Deno.test("E2E Execution Order - Recursive test pattern", async () => {
-  const result = await runDreamCommand(["test", "--debug"], join(EXECUTION_ORDER_EXAMPLE, "packages", "utils"));
+  const result = await runDreamCommand(
+    ["test", "--debug"],
+    join(EXECUTION_ORDER_EXAMPLE, "packages", "utils"),
+  );
 
   assertEquals(result.success, true, `Command failed: ${result.error}`);
 
@@ -65,7 +71,10 @@ Deno.test("E2E Execution Order - Recursive test pattern", async () => {
 });
 
 Deno.test("E2E Execution Order - Build with delays", async () => {
-  const result = await runDreamCommand(["build", "--debug"], join(EXECUTION_ORDER_EXAMPLE, "apps", "admin"));
+  const result = await runDreamCommand(
+    ["build", "--debug"],
+    join(EXECUTION_ORDER_EXAMPLE, "apps", "admin"),
+  );
 
   assertEquals(result.success, true, `Command failed: ${result.error}`);
 
@@ -80,21 +89,35 @@ Deno.test("E2E Execution Order - Build with delays", async () => {
 });
 
 Deno.test("E2E Execution Order - Task deduplication", async () => {
-  const result = await runDreamCommand(["build", "--debug"], join(EXECUTION_ORDER_EXAMPLE, "apps", "web"));
+  const result = await runDreamCommand(
+    ["build", "--debug"],
+    join(EXECUTION_ORDER_EXAMPLE, "apps", "web"),
+  );
 
   assertEquals(result.success, true, `Command failed: ${result.error}`);
 
   // Count occurrences of database build in execution section only (should only appear once)
   const executionSection = result.output.split("Executing")[1] || "";
   const dbBuildMatches = executionSection.match(/\.\/services\/database:build/g);
-  assertEquals(dbBuildMatches?.length, 1, "Database build should only run once despite multiple dependencies");
+  assertEquals(
+    dbBuildMatches?.length,
+    1,
+    "Database build should only run once despite multiple dependencies",
+  );
 });
 
 Deno.test("E2E Execution Order - Non-recursive vs recursive", async () => {
   // Test non-recursive (database test without recursive config)
-  const nonRecursiveResult = await runDreamCommand(["test", "--debug"], join(EXECUTION_ORDER_EXAMPLE, "services", "auth"));
+  const nonRecursiveResult = await runDreamCommand(
+    ["test", "--debug"],
+    join(EXECUTION_ORDER_EXAMPLE, "services", "auth"),
+  );
 
-  assertEquals(nonRecursiveResult.success, true, `Non-recursive command failed: ${nonRecursiveResult.error}`);
+  assertEquals(
+    nonRecursiveResult.success,
+    true,
+    `Non-recursive command failed: ${nonRecursiveResult.error}`,
+  );
 
   // Should only include direct dependencies, not recursive ones
   assertStringIncludes(nonRecursiveResult.output, "./apps/admin:test");
@@ -102,7 +125,10 @@ Deno.test("E2E Execution Order - Non-recursive vs recursive", async () => {
   assertStringIncludes(nonRecursiveResult.output, "./services/auth:test");
 
   // Test recursive (database test with recursive config)
-  const recursiveResult = await runDreamCommand(["test", "--debug"], join(EXECUTION_ORDER_EXAMPLE, "services", "database"));
+  const recursiveResult = await runDreamCommand(
+    ["test", "--debug"],
+    join(EXECUTION_ORDER_EXAMPLE, "services", "database"),
+  );
 
   assertEquals(recursiveResult.success, true, `Recursive command failed: ${recursiveResult.error}`);
 

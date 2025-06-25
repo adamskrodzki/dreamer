@@ -5,7 +5,7 @@ import type { ParsedArgs } from "./types.ts";
 import { ConfigManager } from "./config_manager.ts";
 import { DependencyResolver } from "./dependency_resolver.ts";
 import { DreamRunner } from "./dream_runner.ts";
-import { ConfigError, CircularDependencyError, TaskExecutionError } from "./errors.ts";
+import { CircularDependencyError, ConfigError, TaskExecutionError } from "./errors.ts";
 
 const VERSION = "1.0.0";
 
@@ -59,7 +59,9 @@ async function showInfo(): Promise<number> {
       const workspaceRoot = configManager.getWorkspaceRoot();
 
       console.log(`✅ Workspace Root: ${workspaceRoot}`);
-      console.log(`✅ Configuration Valid: ${Object.keys(config.workspace).length} projects configured`);
+      console.log(
+        `✅ Configuration Valid: ${Object.keys(config.workspace).length} projects configured`,
+      );
 
       // Show workspace projects
       console.log(`\nWorkspace Projects:`);
@@ -72,7 +74,9 @@ async function showInfo(): Promise<number> {
       if (config.tasks && Object.keys(config.tasks).length > 0) {
         console.log(`\nTask Defaults:`);
         for (const [taskName, defaults] of Object.entries(config.tasks)) {
-          console.log(`  ${taskName}: async=${defaults.async}, required=${defaults.required}, delay=${defaults.delay}ms`);
+          console.log(
+            `  ${taskName}: async=${defaults.async}, required=${defaults.required}, delay=${defaults.delay}ms`,
+          );
         }
       }
 
@@ -230,7 +234,9 @@ export async function main(args: string[] = Deno.args): Promise<number> {
         console.log(`Debug: Current project path: ${currentProjectPath}`);
         console.log(`Debug: Resolved ${executionPlan.tasks.length} tasks:`);
         for (const task of executionPlan.tasks) {
-          console.log(`  ${task.id} (async: ${task.async}, required: ${task.required}, delay: ${task.delay}ms)`);
+          console.log(
+            `  ${task.id} (async: ${task.async}, required: ${task.required}, delay: ${task.delay}ms)`,
+          );
         }
       } else {
         console.log(`Executing task: ${parsedArgs.task}`);

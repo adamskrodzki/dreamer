@@ -10,13 +10,17 @@ Dream CLI solves two critical problems in monorepo development:
 ## Why Dream CLI?
 
 ### The Problem
+
 In complex monorepos, making changes to one project can break others. Traditional approaches require:
+
 - Manually remembering which projects depend on your changes
 - Manually starting multiple services in the correct order for development
 - Running tests across multiple projects to ensure changes don't break clients
 
 ### The Solution
+
 Dream CLI uses explicit configuration to automatically:
+
 - Execute tests on projects that import/depend on your changes
 - Start service dependencies in the correct order with proper timing
 - Handle both simple dependency chains and complex service orchestration
@@ -46,6 +50,7 @@ dream --help
 ## How It Works
 
 ### 1. Dependency-Aware Testing
+
 When you modify a shared package, Dream CLI automatically tests all projects that depend on it:
 
 ```bash
@@ -57,6 +62,7 @@ dream test
 This ensures your changes don't break client projects.
 
 ### 2. Development Environment Orchestration
+
 When you start development, Dream CLI automatically starts all required services:
 
 ```bash
@@ -79,8 +85,8 @@ Create a `dream.json` file in your workspace root:
     },
     "./apps/web": {
       "dev": [
-        {"projectPath": "./services/database", "task": "start", "async": true},
-        {"projectPath": "./services/api", "task": "dev", "async": true, "delay": 2000}
+        { "projectPath": "./services/database", "task": "start", "async": true },
+        { "projectPath": "./services/api", "task": "dev", "async": true, "delay": 2000 }
       ]
     }
   },
@@ -96,6 +102,7 @@ Create a `dream.json` file in your workspace root:
 ### Configuration Formats
 
 **Simple Format** - For dependency testing:
+
 ```json
 {
   "workspace": {
@@ -107,6 +114,7 @@ Create a `dream.json` file in your workspace root:
 ```
 
 **Detailed Format** - For service orchestration:
+
 ```json
 {
   "workspace": {
@@ -151,6 +159,7 @@ dream lint
 ## Advanced Features
 
 ### Recursive Dependency Resolution
+
 Enable deep dependency resolution for complex dependency trees:
 
 ```json
@@ -167,15 +176,16 @@ Enable deep dependency resolution for complex dependency trees:
 When enabled, Dream CLI will recursively resolve dependencies of dependencies.
 
 ### Task Configuration
+
 Control execution behavior with detailed task configuration:
 
 ```json
 {
   "tasks": {
     "dev": {
-      "async": true,      // Run concurrently
-      "required": false,  // Continue on failure
-      "delay": 1000      // Wait 1s before starting
+      "async": true, // Run concurrently
+      "required": false, // Continue on failure
+      "delay": 1000 // Wait 1s before starting
     }
   }
 }
@@ -192,14 +202,15 @@ dream --help          # Show help message
 ## Real-World Examples
 
 ### Microservices Architecture
+
 ```json
 {
   "workspace": {
     "./apps/frontend": {
       "dev": [
-        {"projectPath": "./services/database", "task": "start", "async": true},
-        {"projectPath": "./services/auth", "task": "dev", "async": true, "delay": 2000},
-        {"projectPath": "./services/api", "task": "dev", "async": true, "delay": 4000}
+        { "projectPath": "./services/database", "task": "start", "async": true },
+        { "projectPath": "./services/auth", "task": "dev", "async": true, "delay": 2000 },
+        { "projectPath": "./services/api", "task": "dev", "async": true, "delay": 4000 }
       ]
     },
     "./services/auth": {
@@ -210,6 +221,7 @@ dream --help          # Show help message
 ```
 
 ### Package Library
+
 ```json
 {
   "workspace": {
