@@ -151,7 +151,7 @@ Use when you need to start services with specific configurations:
 }
 ```
 
-**Meaning**: When running `dream dev` from `./apps/web`, start database immediately, then start API service after 3 seconds.
+**Meaning**: When running `dream dev` from `./apps/web`, start database immediately in background, start API service immediately in background, wait 3 seconds after starting API, then start web dev.
 
 #### Mixed Format - Combining Both Patterns
 
@@ -190,14 +190,15 @@ Use when you need to start services with specific configurations:
 
 #### Task Defaults Section
 
-- **async**: Whether task runs concurrently (default: false)
-  - `true`: Task starts immediately without waiting for completion
+- **async**: Whether task runs in background without blocking subsequent tasks (default: false)
+  - `true`: Task starts in background and runner continues immediately to next task without waiting for completion
   - `false`: Task runs synchronously, blocking subsequent tasks until completion
 - **required**: Whether task failure stops execution (default: true)
   - `true`: If task fails (non-zero exit code), execution stops and remaining tasks are skipped
   - `false`: If task fails, execution continues with remaining tasks
-- **delay**: Milliseconds to wait before starting task (default: 0)
-  - Applied before task execution begins
+- **delay**: Milliseconds to wait (default: 0)
+  - **For async tasks**: Applied AFTER starting the task, before starting next task
+  - **For sync tasks**: Applied BEFORE starting the task (unchanged behavior)
   - Useful for service startup orchestration (e.g., database before API)
 
 #### Recursive Section (Optional)
@@ -325,6 +326,26 @@ dream e2e                 # Run e2e tests with configured setup
 - **Command**: Executes `deno task <task-name>` in project directory
 - **Output**: Task output is displayed in real-time
 
+### Process Lifecycle Management
+
+#### Background Process Management
+
+- **Process Tracking**: All async tasks are tracked as background processes
+- **Process Monitoring**: Background processes are monitored for health and exit status
+- **Concurrent Execution**: Multiple async tasks can run simultaneously without blocking each other
+
+#### Process Termination
+
+- **Graceful Shutdown**: Background processes receive termination signals for clean shutdown
+- **Forceful Termination**: Processes that don't respond to graceful shutdown are forcefully terminated
+- **Failure Propagation**: When a required async task fails, all running background processes are terminated
+
+#### Process Cleanup
+
+- **Automatic Cleanup**: Background processes are automatically cleaned up when execution completes
+- **Failure Cleanup**: Failed processes are properly cleaned up to prevent resource leaks
+- **Signal Handling**: Proper signal handling ensures processes can perform cleanup operations
+
 ### Execution Order and Parameter Effects
 
 #### Execution Order Logic
@@ -341,8 +362,8 @@ dream e2e                 # Run e2e tests with configured setup
 **`async` Parameter:**
 
 - **`false` (default)**: Tasks execute sequentially, each waiting for the previous to complete
-- **`true`**: Tasks start immediately without waiting, allowing concurrent execution
-- **Mixed execution**: Sync tasks block until complete, async tasks run in parallel
+- **`true`**: Tasks start in background without blocking subsequent tasks, allowing concurrent execution
+- **Mixed execution**: Sync tasks block until complete, async tasks run concurrently in background
 
 **`required` Parameter:**
 
@@ -352,10 +373,11 @@ dream e2e                 # Run e2e tests with configured setup
 
 **`delay` Parameter:**
 
-- **Applied**: Before task execution begins (after any previous task completes)
+- **For async tasks**: Applied AFTER starting the task, before starting next task
+- **For sync tasks**: Applied BEFORE starting the task (after any previous task completes)
 - **Units**: Milliseconds
 - **Use case**: Service orchestration (e.g., wait for database to start before API)
-- **Async interaction**: Delays are applied even for async tasks before they start
+- **Timing difference**: Critical distinction between async (delay after start) vs sync (delay before start)
 
 #### Execution Examples
 
@@ -363,6 +385,7 @@ dream e2e                 # Run e2e tests with configured setup
 
 ```
 Task A (sync, required) → Task B (sync, required) → Task C (sync, optional)
+Total time: A_time + B_time + C_time
 ```
 
 If Task B fails, Task C is skipped.
@@ -371,17 +394,49 @@ If Task B fails, Task C is skipped.
 
 ```
 Task A (sync, required) → [Task B (async) + Task C (async)] → Task D (sync)
+Total time: A_time + max(B_time, C_time) + D_time
+Background: B and C run concurrently after A completes
 ```
 
-Task A completes first, then B and C run concurrently, then D waits for both B and C.
+Task A completes first, then B and C start concurrently in background, then D waits for both B and C to complete.
 
-**With Delays:**
+**Async with Delays (Correct Behavior):**
 
 ```
-Task A (delay: 0ms) → wait 1000ms → Task B (delay: 1000ms) → wait 2000ms → Task C (delay: 2000ms)
+Task A (async, delay: 0ms) → immediately start Task B (async, delay: 2000ms) → wait 2000ms → Task C (sync)
+Total time: max(A_time, B_time + 2000ms) + C_time
+Background: A starts immediately, B starts immediately, wait 2000ms after B starts, then C waits for both
+```
+
+**Sync with Delays (Current Behavior):**
+
+```
+Task A (sync, delay: 1000ms) → wait 1000ms → Task B (sync, delay: 2000ms) → wait 2000ms → Task C (sync)
+Total time: 1000ms + A_time + 2000ms + B_time + C_time
 ```
 
 - **Error Handling**: Non-zero exit codes are treated as failures
+
+### Async Task Failure Propagation
+
+#### Required Async Task Failures
+
+- **Immediate Termination**: When a required async task fails, all running background processes are immediately terminated
+- **Pending Task Cancellation**: All pending tasks (not yet started) are cancelled and skipped
+- **Cleanup Process**: Failed and terminated processes are properly cleaned up to prevent resource leaks
+- **Exit Code Propagation**: The failure exit code is propagated to the main process
+
+#### Optional Async Task Failures
+
+- **Continued Execution**: When an optional async task fails, other tasks continue running normally
+- **Failure Logging**: The failure is logged but does not affect other task execution
+- **Background Cleanup**: Only the failed optional task is cleaned up, others continue running
+
+#### Mixed Failure Scenarios
+
+- **Multiple Failures**: If multiple async tasks fail simultaneously, the first required failure triggers termination
+- **Sync Task Dependencies**: Sync tasks that depend on failed async tasks are skipped
+- **Graceful vs Forceful**: Background processes are given time for graceful shutdown before forceful termination
 
 ## Error Handling
 
@@ -477,7 +532,9 @@ dream test
 ```bash
 cd apps/web
 dream dev
-# Executes: database start → auth dev (3s delay) → api dev (5s delay) → web dev
+# Correct Execution: database start (async) → auth dev starts immediately (async) → wait 3s → api dev starts (async) → wait 5s → web dev
+# Total time: max(database_time, auth_time + 3000ms, api_time + 5000ms) + web_dev_time
+# Background: database, auth, and api all run concurrently
 ```
 
 ### Use Case 3: Build Pipeline with Dependencies

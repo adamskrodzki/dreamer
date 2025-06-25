@@ -401,7 +401,7 @@ Deno.test("MockProcessRunner - reset functionality", async () => {
   assertEquals(result.success, true); // Default is success
 });
 
-Deno.test("TaskExecutor - async task execution", async () => {
+Deno.test("TaskExecutor - async task execution (NEEDS FIX: should verify concurrency)", async () => {
   const mockRunner = new MockProcessRunner();
   const runner = new DreamRunner(mockRunner, "/workspace");
 
@@ -420,7 +420,7 @@ Deno.test("TaskExecutor - async task execution", async () => {
       taskName: "dev",
       async: true,
       required: true,
-      delay: 100, // Small delay for testing
+      delay: 100, // 100ms delay AFTER starting (not before)
     },
     {
       id: "./apps/web:dev",
@@ -436,12 +436,13 @@ Deno.test("TaskExecutor - async task execution", async () => {
     tasks: taskExecutions,
   };
 
+  // Set up longer durations to test concurrency
   mockRunner.setMockResult("deno", ["task", "start"], {
     success: true,
     exitCode: 0,
     stdout: "Database started",
     stderr: "",
-    duration: 50,
+    duration: 500, // 500ms task
   });
 
   mockRunner.setMockResult("deno", ["task", "dev"], {
@@ -449,10 +450,12 @@ Deno.test("TaskExecutor - async task execution", async () => {
     exitCode: 0,
     stdout: "Service started",
     stderr: "",
-    duration: 30,
+    duration: 300, // 300ms task
   });
 
+  const startTime = Date.now();
   const summary = await runner.execute(executionPlan);
+  const totalTime = Date.now() - startTime;
 
   assertEquals(summary.results.length, 3);
   assertEquals(summary.results[0].success, true);
@@ -464,9 +467,17 @@ Deno.test("TaskExecutor - async task execution", async () => {
   // Verify all tasks were called
   const callLog = mockRunner.getCallLog();
   assertEquals(callLog.length, 3);
+
+  // TODO: Once async execution is implemented correctly, verify timing:
+  // With correct concurrent execution: ~max(500, 300) + 100ms delay + web_time = ~600ms
+  // With current sequential execution: 500 + 100 + 300 + web_time = ~900ms+
+  console.log(`Current execution time: ${totalTime}ms (should be ~600ms with concurrency, ~900ms+ sequential)`);
+
+  // TODO: Uncomment when async execution is fixed:
+  // assertEquals(totalTime < 700, true, `Expected concurrent execution (~600ms), got ${totalTime}ms`);
 });
 
-Deno.test("TaskExecutor - mixed async and sync execution", async () => {
+Deno.test("TaskExecutor - mixed async and sync execution (NEEDS FIX: timing expectations)", async () => {
   const mockRunner = new MockProcessRunner();
   const runner = new DreamRunner(mockRunner, "/workspace");
 
@@ -475,7 +486,7 @@ Deno.test("TaskExecutor - mixed async and sync execution", async () => {
       id: "./packages/utils:build",
       projectPath: "./packages/utils",
       taskName: "build",
-      async: false, // Sync task
+      async: false, // Sync task - blocks until complete
       required: true,
       delay: 0,
     },
@@ -483,7 +494,7 @@ Deno.test("TaskExecutor - mixed async and sync execution", async () => {
       id: "./services/database:start",
       projectPath: "./services/database",
       taskName: "start",
-      async: true, // Async task
+      async: true, // Async task - runs in background
       required: true,
       delay: 0,
     },
@@ -491,9 +502,9 @@ Deno.test("TaskExecutor - mixed async and sync execution", async () => {
       id: "./services/api:dev",
       projectPath: "./services/api",
       taskName: "dev",
-      async: true, // Async task
+      async: true, // Async task - runs in background
       required: true,
-      delay: 0,
+      delay: 500, // 500ms delay AFTER starting
     },
   ];
 
@@ -506,7 +517,7 @@ Deno.test("TaskExecutor - mixed async and sync execution", async () => {
     exitCode: 0,
     stdout: "Build completed",
     stderr: "",
-    duration: 20,
+    duration: 200, // 200ms sync task
   });
 
   mockRunner.setMockResult("deno", ["task", "start"], {
@@ -514,7 +525,7 @@ Deno.test("TaskExecutor - mixed async and sync execution", async () => {
     exitCode: 0,
     stdout: "Database started",
     stderr: "",
-    duration: 30,
+    duration: 400, // 400ms async task
   });
 
   mockRunner.setMockResult("deno", ["task", "dev"], {
@@ -522,10 +533,12 @@ Deno.test("TaskExecutor - mixed async and sync execution", async () => {
     exitCode: 0,
     stdout: "API started",
     stderr: "",
-    duration: 25,
+    duration: 300, // 300ms async task
   });
 
+  const startTime = Date.now();
   const summary = await runner.execute(executionPlan);
+  const totalTime = Date.now() - startTime;
 
   assertEquals(summary.results.length, 3);
   assertEquals(summary.successfulTasks, 3);
@@ -539,6 +552,17 @@ Deno.test("TaskExecutor - mixed async and sync execution", async () => {
   // Verify all tasks were called
   const callLog = mockRunner.getCallLog();
   assertEquals(callLog.length, 3);
+
+  // TODO: Once mixed execution is implemented correctly, verify timing:
+  // Expected flow:
+  // 1. Utils builds (sync, 200ms) - blocks
+  // 2. Database starts in background (async, 400ms)
+  // 3. API starts in background (async, 300ms), then 500ms delay
+  // Total: 200ms + max(400ms, 300ms + 500ms) = 200ms + 800ms = 1000ms
+  console.log(`Mixed execution time: ${totalTime}ms (should be ~1000ms with correct async/sync handling)`);
+
+  // TODO: Uncomment when mixed execution is fixed:
+  // assertEquals(totalTime >= 900 && totalTime <= 1200, true, `Expected ~1000ms, got ${totalTime}ms`);
 });
 
 Deno.test("TaskExecutor - async task failure handling", async () => {
@@ -741,7 +765,7 @@ Deno.test("TaskExecutor - optional task failure continues execution", async () =
   assertEquals(callLog.length, 3);
 });
 
-Deno.test("TaskExecutor - delay parameter effect", async () => {
+Deno.test("TaskExecutor - delay parameter effect (NEEDS FIX: async vs sync delay timing)", async () => {
   const mockRunner = new MockProcessRunner();
   const runner = new DreamRunner(mockRunner, "/workspace");
 
@@ -750,17 +774,17 @@ Deno.test("TaskExecutor - delay parameter effect", async () => {
       id: "./services/database:start",
       projectPath: "./services/database",
       taskName: "start",
-      async: false,
+      async: true, // Async task - delay AFTER starting
       required: true,
-      delay: 100, // 100ms delay
+      delay: 100, // 100ms delay AFTER starting
     },
     {
       id: "./services/api:dev",
       projectPath: "./services/api",
       taskName: "dev",
-      async: false,
+      async: false, // Sync task - delay BEFORE starting
       required: true,
-      delay: 200, // 200ms delay
+      delay: 200, // 200ms delay BEFORE starting
     },
   ];
 
@@ -773,7 +797,7 @@ Deno.test("TaskExecutor - delay parameter effect", async () => {
     exitCode: 0,
     stdout: "Database started",
     stderr: "",
-    duration: 50,
+    duration: 300, // 300ms task
   });
 
   mockRunner.setMockResult("deno", ["task", "dev"], {
@@ -781,7 +805,7 @@ Deno.test("TaskExecutor - delay parameter effect", async () => {
     exitCode: 0,
     stdout: "API started",
     stderr: "",
-    duration: 50,
+    duration: 150, // 150ms task
   });
 
   const startTime = Date.now();
@@ -794,7 +818,15 @@ Deno.test("TaskExecutor - delay parameter effect", async () => {
   assertEquals(summary.successfulTasks, 2);
   assertEquals(summary.failedTasks, 0);
 
-  // In mock mode, delays are skipped, so we just verify the structure works
-  // In real execution, this would take at least 300ms (100 + 200 delays + execution time)
-  console.log(`Execution time with delays: ${totalTime}ms`);
+  // TODO: Once delay timing is fixed, verify correct behavior:
+  // Expected flow:
+  // 1. Database starts immediately (async), runs for 300ms
+  // 2. Wait 100ms after database starts (async delay)
+  // 3. Wait 200ms before starting API (sync delay)
+  // 4. API runs for 150ms
+  // Total: max(300ms, 100ms) + 200ms + 150ms = 300ms + 200ms + 150ms = 650ms
+  console.log(`Delay execution time: ${totalTime}ms (should be ~650ms with correct async/sync delay timing)`);
+
+  // TODO: Uncomment when delay timing is fixed:
+  // assertEquals(totalTime >= 600 && totalTime <= 750, true, `Expected ~650ms, got ${totalTime}ms`);
 });
