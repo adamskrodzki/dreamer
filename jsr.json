@@ -8,9 +8,7 @@
     "url": "https://github.com/JinxCodesAI/dreamer.git"
   },
   "exports": {
-    ".": "./src/main.ts",
-    "./lib": "./src/dream_runner.ts",
-    "./types": "./src/types.ts"
+    ".": "./src/main.ts"
   },
   "publish": {
     "exclude": [
