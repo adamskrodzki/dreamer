@@ -1,6 +1,6 @@
 {
-  "name": "@JinxCodesAIi/dreamer-cli",
-  "version": "1.0.0",
+  "name": "@jinxcodesai/dreamer-cli",
+  "version": "1.0.1",
   "description": "Dependency-aware task execution for Deno monorepos",
   "license": "MIT",
   "repository": {

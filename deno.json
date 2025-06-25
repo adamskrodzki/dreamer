@@ -1,5 +1,5 @@
 {
-  "name": "@JinxCodesAIi/dreamer-cli",
+  "name": "@jinxcodesai/dreamer-cli",
   "version": "1.0.0",
   "exports": "./src/main.ts",
   "tasks": {
