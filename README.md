@@ -38,10 +38,7 @@ Dream CLI uses explicit configuration to automatically:
 
 ```bash
 # Install from JSR
-deno install --allow-read --allow-run --allow-env --name=dream jsr:@JinxCodesAIi/dreamer-cli
-
-# Or use directly
-deno run --allow-read --allow-run --allow-env jsr:@JinxCodesAIi/dreamer-cli test
+deno install --allow-read --allow-run --allow-env --name=dream --global jsr:@JinxCodesAIi/dreamer-cli
 
 # Show help and available commands
 dream --help
