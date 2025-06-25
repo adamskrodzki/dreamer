@@ -165,9 +165,7 @@ Deno.test("Failure Handling - required async task failure terminates all running
   // For now, just run and verify basic behavior
   const summary = await runner.execute(executionPlan);
 
-  // THIS TEST SHOULD FAIL with current implementation
   // When a required async task fails, execution should stop immediately
-  // Current implementation continues with sequential execution
   assertEquals(summary.failedTasks > 0, true, "Should have failed tasks");
   assertEquals(summary.successfulTasks < 3, true, "Should not complete all tasks when required task fails");
 

@@ -174,6 +174,13 @@ export class TaskExecutor {
   }
 
   /**
+   * Get the process runner (for testing purposes)
+   */
+  getProcessRunner(): ProcessRunner {
+    return this.processRunner;
+  }
+
+  /**
    * Execute a single task
    */
   async executeTask(taskExecution: TaskExecution): Promise<TaskResult> {
