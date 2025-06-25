@@ -2,7 +2,7 @@ import type { TaskExecution, TaskResult, ProcessRunner, ProcessRunnerOptions } f
 import { TaskExecutionError } from "./errors.ts";
 
 /**
- * Real process runner that executes deno task commands
+ * Real process runner that executes deno task commands with real-time output streaming
  */
 export class DenoProcessRunner implements ProcessRunner {
   async run(command: string, args: string[], options: ProcessRunnerOptions): Promise<TaskResult> {
@@ -32,15 +32,36 @@ export class DenoProcessRunner implements ProcessRunner {
         }, options.timeout);
       }
 
-      const { code, stdout, stderr } = await process.output();
+      // Stream output to console while capturing it
+      const stdoutChunks: Uint8Array[] = [];
+      const stderrChunks: Uint8Array[] = [];
+
+      // Create readers for stdout and stderr
+      const stdoutReader = process.stdout.getReader();
+      const stderrReader = process.stderr.getReader();
+
+      // Stream stdout
+      const stdoutPromise = this.streamOutput(stdoutReader, stdoutChunks, false);
+
+      // Stream stderr
+      const stderrPromise = this.streamOutput(stderrReader, stderrChunks, true);
+
+      // Wait for process completion and streaming to finish
+      const [{ code }, , ] = await Promise.all([
+        process.status,
+        stdoutPromise,
+        stderrPromise,
+      ]);
 
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
 
       const duration = Date.now() - startTime;
-      const stdoutText = new TextDecoder().decode(stdout);
-      const stderrText = new TextDecoder().decode(stderr);
+
+      // Combine captured chunks into strings
+      const stdoutText = new TextDecoder().decode(this.combineChunks(stdoutChunks));
+      const stderrText = new TextDecoder().decode(this.combineChunks(stderrChunks));
 
       return {
         success: code === 0,
@@ -63,6 +84,64 @@ export class DenoProcessRunner implements ProcessRunner {
         taskExecution: {} as TaskExecution,
       };
     }
+  }
+
+  /**
+   * Stream output from a reader to console while capturing chunks
+   */
+  private async streamOutput(
+    reader: ReadableStreamDefaultReader<Uint8Array>,
+    chunks: Uint8Array[],
+    isStderr: boolean
+  ): Promise<void> {
+    const decoder = new TextDecoder();
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) {
+          break;
+        }
+
+        // Capture the chunk for later processing
+        chunks.push(value);
+
+        // Stream to console in real-time
+        const text = decoder.decode(value, { stream: true });
+        if (text) {
+          if (isStderr) {
+            // Write stderr to stderr
+            await Deno.stderr.write(new TextEncoder().encode(text));
+          } else {
+            // Write stdout to stdout
+            await Deno.stdout.write(new TextEncoder().encode(text));
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  }
+
+  /**
+   * Combine chunks into a single Uint8Array
+   */
+  private combineChunks(chunks: Uint8Array[]): Uint8Array {
+    if (chunks.length === 0) {
+      return new Uint8Array(0);
+    }
+
+    const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+    const combined = new Uint8Array(totalLength);
+
+    let offset = 0;
+    for (const chunk of chunks) {
+      combined.set(chunk, offset);
+      offset += chunk.length;
+    }
+
+    return combined;
   }
 
   private mockExecution(command: string, args: string[], options: ProcessRunnerOptions): Promise<TaskResult> {

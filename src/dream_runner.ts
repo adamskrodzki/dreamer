@@ -63,24 +63,14 @@ export class DreamRunner {
 
         if (result.success) {
           successfulTasks++;
-          if (debug) {
-            console.log(`  ✅ Completed successfully (${result.duration}ms)`);
-            if (result.stdout.trim()) {
-              console.log(`  Output: ${result.stdout.trim()}`);
-            }
-          } else {
-            console.log(`  ✅ ${taskExecution.projectPath} ${taskExecution.taskName} (${result.duration}ms)`);
-          }
+          // Output is now streamed in real-time by DenoProcessRunner
+          // Just show completion status with timing
+          console.log(`  ✅ ${taskExecution.projectPath} ${taskExecution.taskName} (${result.duration}ms)`);
         } else {
           failedTasks++;
-          if (debug) {
-            console.log(`  ❌ Failed with exit code ${result.exitCode} (${result.duration}ms)`);
-            if (result.stderr.trim()) {
-              console.log(`  Error: ${result.stderr.trim()}`);
-            }
-          } else {
-            console.log(`  ❌ ${taskExecution.projectPath} ${taskExecution.taskName} failed (exit code ${result.exitCode})`);
-          }
+          // Error output is now streamed in real-time by DenoProcessRunner
+          // Just show failure status
+          console.log(`  ❌ ${taskExecution.projectPath} ${taskExecution.taskName} failed (exit code ${result.exitCode})`);
 
           // If task is required and failed, stop execution
           if (taskExecution.required) {

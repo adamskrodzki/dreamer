@@ -435,8 +435,8 @@ Deno.test("E2E Task Execution - Debug output shows execution details", async () 
     assertStringIncludes(result.stdout, "Executing 1 tasks:");
     assertStringIncludes(result.stdout, "[1/1] Starting: ./packages/utils:test");
     assertStringIncludes(result.stdout, "Waiting 100ms before execution");
-    assertStringIncludes(result.stdout, "✅ Completed successfully");
-    assertStringIncludes(result.stdout, "Output: Test output");
+    assertStringIncludes(result.stdout, "✅ ./packages/utils test");
+    assertStringIncludes(result.stdout, "Test output");
     assertStringIncludes(result.stdout, "📊 Execution Summary:");
     assertStringIncludes(result.stdout, "Total tasks: 1");
     assertStringIncludes(result.stdout, "Successful: 1");

@@ -418,7 +418,7 @@ Deno.test("Integration Task Execution - debug output", async () => {
       // Verify debug output
       assertStringIncludes(output, "Executing 1 tasks:");
       assertStringIncludes(output, "[1/1] Starting: ./packages/utils:test");
-      assertStringIncludes(output, "✅ Completed successfully");
+      assertStringIncludes(output, "✅ ./packages/utils test");
       assertStringIncludes(output, "📊 Execution Summary:");
       assertStringIncludes(output, "Total tasks: 1");
       assertStringIncludes(output, "Successful: 1");

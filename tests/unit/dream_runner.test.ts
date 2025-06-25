@@ -218,7 +218,7 @@ Deno.test("DreamRunner - execute with debug output", async () => {
     // Verify debug output
     assertEquals(output.includes("Executing 1 tasks:"), true);
     assertEquals(output.includes("[1/1] Starting: ./packages/utils:test"), true);
-    assertEquals(output.includes("✅ Completed successfully"), true);
+    assertEquals(output.includes("✅ ./packages/utils test"), true);
     assertEquals(output.includes("📊 Execution Summary:"), true);
   } finally {
     console.log = originalLog;
@@ -263,8 +263,7 @@ Deno.test("DreamRunner - execute with debug output and failure", async () => {
     assertEquals(summary.failedTasks, 1);
     
     // Verify debug output for failure
-    assertEquals(output.includes("❌ Failed with exit code 1"), true);
-    assertEquals(output.includes("Error: Test failed"), true);
+    assertEquals(output.includes("❌ ./packages/utils test failed"), true);
   } finally {
     console.log = originalLog;
   }
