@@ -118,6 +118,11 @@ async function showInfo(): Promise<number> {
   }
 }
 
+/**
+ * cli args parser
+ * @param args 
+ * @returns name of a task and status of flags
+ */
 export function parseCliArgs(args: string[]): ParsedArgs {
   const parsed = parseArgs(args, {
     boolean: ["help", "version", "debug", "info"],
@@ -150,7 +155,11 @@ export function parseCliArgs(args: string[]): ParsedArgs {
     _: parsed._.slice(1).map(String),
   };
 }
-
+/**
+ * main entry point for cli command
+ * @param args 
+ * @returns status code
+ */
 export async function main(args: string[] = Deno.args): Promise<number> {
   try {
     const parsedArgs = parseCliArgs(args);
