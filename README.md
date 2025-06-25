@@ -4,11 +4,11 @@ Dependency-aware task execution for Deno monorepos.
 
 ## Overview
 
-Dream CLI enables developers to efficiently manage complex project dependencies by automatically discovering and executing tasks in the correct order while respecting execution requirements.
+Dream CLI enables developers to efficiently manage complex project dependencies by executing explicitly configured dependencies in the correct order while respecting execution requirements.
 
 ## Core Features
 
-- **Dependency-Aware Testing**: Test current project + all client projects that depend on it
+- **Dependency-Aware Testing**: Test configured dependencies + current project
 - **Service Orchestration**: Start service dependencies with delays and async support
 - **Flexible Configuration**: Support both simple strings and detailed dependency objects
 - **Deno-Native**: Built specifically for Deno with proper permission handling
@@ -55,9 +55,9 @@ Create a `dream.json` file in your workspace root:
 ## Usage
 
 ```bash
-dream test    # Test current project + all its clients
+dream test    # Test configured dependencies + current project
 dream dev     # Start required services + current project dev
-dream build   # Build current project + configured dependencies
+dream build   # Build configured dependencies + current project
 ```
 
 ## Development

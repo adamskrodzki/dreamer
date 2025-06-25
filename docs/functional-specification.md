@@ -2,23 +2,23 @@
 
 ## Overview
 
-Dream CLI is a Deno runtime-specific task dependency execution tool designed for monorepo workspaces. It enables developers to efficiently manage complex project dependencies by automatically discovering and executing tasks in the correct order while respecting execution requirements.
+Dream CLI is a Deno runtime-specific task dependency execution tool designed for monorepo workspaces. It enables developers to efficiently manage complex project dependencies by executing explicitly configured dependencies in the correct order while respecting execution requirements. The tool is task-agnostic - the same dependency resolution logic applies to any task name (test, dev, build, deploy, etc.).
 
 ## Core Objectives
 
-### 1. Dependency-Aware Testing (Client Impact Testing)
-**Problem**: When you change a shared library or service, you need to ensure it doesn't break projects that use it.
+### 1. Dependency-Aware Task Execution
+**Problem**: When working on a project, you need to ensure its dependencies are properly set up and executed in the correct order.
 
-**Solution**: Configure which "client" projects should be tested when a project changes.
+**Solution**: Configure which dependency projects should be executed when running a task on the current project.
 
-**Example**: When you modify `./packages/auth`, automatically test `./services/api` and `./apps/web` (which both use auth) to ensure your changes don't break them.
+**Example**: When you run `dream test` in `./services/api`, automatically execute tests for `./packages/auth` and `./packages/utils` first to ensure dependencies are working correctly.
 
 **Configuration Pattern**:
 ```json
 {
   "workspace": {
-    "./packages/auth": {
-      "test": ["./services/api", "./apps/web"]
+    "./services/api": {
+      "test": ["./packages/auth", "./packages/utils"]
     }
   }
 }
@@ -100,18 +100,18 @@ Provide a JSON-based configuration system that supports both simple and complex 
 
 ### Dependency Definition Formats
 
-#### Simple Format (String) - For Testing Clients
-Use when you want to test projects that use the current project:
+#### Simple Format (String) - For Dependency Execution
+Use when you want to execute dependencies before the current project:
 ```json
 {
   "workspace": {
-    "./packages/auth": {
-      "test": ["./services/api", "./apps/web"]
+    "./services/api": {
+      "test": ["./packages/auth", "./packages/utils"]
     }
   }
 }
 ```
-**Meaning**: When testing `./packages/auth`, also test `./services/api` and `./apps/web` (which are clients of auth).
+**Meaning**: When testing `./services/api`, first test `./packages/auth` and `./packages/utils` (which are dependencies of the API service).
 
 #### Detailed Format (Object) - For Development Dependencies
 Use when you need to start services with specific configurations:
@@ -145,8 +145,8 @@ Use when you need to start services with specific configurations:
 ```json
 {
   "workspace": {
-    "./packages/shared": {
-      "test": ["./services/api", "./apps/web"],
+    "./services/api": {
+      "test": ["./packages/shared", "./packages/utils"],
       "dev": [
         {
           "projectPath": "./services/database",
@@ -161,17 +161,16 @@ Use when you need to start services with specific configurations:
 }
 ```
 **Meaning**:
-- For testing: Test shared package, then test its clients (api, web)
-- For development: Start database service, then start shared package development
+- For testing: Test dependencies first, then test the current project
+- For development: Start database service, then start API service development
 
 ### Configuration Properties
 
 #### Workspace Section
 - **Key**: Project path relative to workspace root
 - **Value**: Object mapping task names to arrays of:
-  - **For `test` tasks**: Client projects that should be tested when this project changes
-  - **For `dev` tasks**: Service dependencies that should be started for development
-  - **For other tasks**: Projects that should execute the same task
+  - **For all tasks**: Dependency projects that should be executed before the current project
+  - Task names are arbitrary - the same dependency resolution logic applies regardless of task name
 
 #### Task Defaults Section
 - **async**: Whether task runs concurrently (default: false)
@@ -233,9 +232,9 @@ dream --debug             # Enable debug output
 
 ### Examples
 ```bash
-dream test                # Test current project + all its clients
+dream test                # Test configured dependencies + current project
 dream dev                 # Start required services + current project dev
-dream build               # Build current project + configured dependencies
+dream build               # Build configured dependencies + current project
 dream e2e                 # Run e2e tests with configured setup
 ```
 
@@ -269,23 +268,21 @@ dream e2e                 # Run e2e tests with configured setup
 2. **Recursive**: Processes dependencies of dependencies (transitive dependencies) when enabled via `recursive` configuration
 
 #### Resolution Behavior
-1. **Configuration Check**: Determines if project/task should use recursive resolution based on `recursive` configuration array
-2. **Dependency Processing**:
-   - **Non-recursive**: Processes only direct dependencies
+1. **Explicit Dependencies Only**: Only processes dependencies explicitly configured in the `workspace` section
+2. **No Auto-Discovery**: Never automatically discovers or includes projects that depend on the current project
+3. **Configuration Check**: Determines if project/task should use recursive resolution based on `recursive` configuration array
+4. **Dependency Processing**:
+   - **Non-recursive**: Processes only direct dependencies listed in configuration
    - **Recursive**: Processes all transitive dependencies until leaf nodes are reached
-3. **Deduplication**: Same task/project combinations execute only once regardless of resolution mode
-4. **Execution Order**:
-   - **For testing**: Current project first, then all configured clients (and their dependencies if recursive)
-   - **For development**: All configured services first (and their dependencies if recursive), then current project
-5. **Circular Detection**: Circular dependencies are detected and reported in both modes
+5. **Deduplication**: Same task/project combinations execute only once regardless of resolution mode
+6. **Execution Order**: All configured dependencies first (and their dependencies if recursive), then current project
+7. **Circular Detection**: Circular dependencies are detected and reported in both modes
 
 ### Execution Order
-1. **Testing Tasks**:
-   - Execute task on current project first
-   - Then execute same task on all configured client projects
-2. **Development Tasks**:
-   - Start all configured service dependencies first (with delays)
-   - Then start current project's development task
+1. **All Tasks**:
+   - Execute configured dependencies first (in dependency order)
+   - Then execute the current project's task
+   - Task names are arbitrary - same logic applies to test, dev, build, deploy, etc.
 3. **Async Handling**: Async dependencies run concurrently but respect delay settings
 4. **Failure Propagation**: Required task failures stop dependent execution
 5. **Task Deduplication**: Same task/project combination runs only once per execution
@@ -383,15 +380,15 @@ Task A (delay: 0ms) → wait 1000ms → Task B (delay: 1000ms) → wait 2000ms �
 
 ## Use Cases
 
-### Use Case 1: Client Impact Testing
-**Scenario**: You modify a shared authentication package and want to ensure it doesn't break any services or apps that use it.
+### Use Case 1: Dependency-Aware Testing
+**Scenario**: You want to test a service that depends on shared packages, ensuring all dependencies are tested first.
 
 **Configuration**:
 ```json
 {
   "workspace": {
-    "./packages/auth": {
-      "test": ["./services/user-service", "./services/api-gateway", "./apps/web", "./apps/mobile"]
+    "./services/api-gateway": {
+      "test": ["./packages/auth", "./packages/utils", "./packages/validation"]
     }
   }
 }
@@ -399,9 +396,9 @@ Task A (delay: 0ms) → wait 1000ms → Task B (delay: 1000ms) → wait 2000ms �
 
 **Usage**:
 ```bash
-cd packages/auth
+cd services/api-gateway
 dream test
-# Executes: auth tests → user-service tests → api-gateway tests → web tests → mobile tests
+# Executes: auth tests → utils tests → validation tests → api-gateway tests
 ```
 
 ### Use Case 2: Development Environment Setup
@@ -429,15 +426,15 @@ dream dev
 # Executes: database start → auth dev (3s delay) → api dev (5s delay) → web dev
 ```
 
-### Use Case 3: Service Dependency Testing
-**Scenario**: You modify a database service and want to test all services that connect to it.
+### Use Case 3: Build Pipeline with Dependencies
+**Scenario**: You want to build a service that requires its dependencies to be built first.
 
 **Configuration**:
 ```json
 {
   "workspace": {
-    "./services/database": {
-      "test": ["./services/user-service", "./services/order-service", "./services/analytics"]
+    "./services/api": {
+      "build": ["./packages/shared", "./packages/types", "./packages/config"]
     }
   }
 }
@@ -445,9 +442,9 @@ dream dev
 
 **Usage**:
 ```bash
-cd services/database
-dream test
-# Executes: database tests → user-service tests → order-service tests → analytics tests
+cd services/api
+dream build
+# Executes: shared build → types build → config build → api build
 ```
 
 ### Use Case 4: Continuous Integration
@@ -455,7 +452,7 @@ dream test
 
 **Usage**:
 ```bash
-# Test a core package and all its clients with debug output
-cd packages/core
+# Test a service and its dependencies with debug output
+cd services/api
 dream test --debug
 ```

@@ -54,26 +54,26 @@ Deno.test("Integration Dependency - simple linear dependencies", async () => {
   }
 });
 
-Deno.test("Integration Dependency - test pattern with clients", async () => {
+Deno.test("Integration Dependency - test pattern (corrected behavior)", async () => {
   const tempDir = await Deno.makeTempDir();
 
   try {
     const config = {
       workspace: {
         "./packages/utils": {
-          test: ["./packages/base"], // Give utils some dependencies so it will include clients
+          test: ["./packages/base"], // utils depends on base
         },
         "./packages/base": {
           test: [],
         },
         "./packages/core": {
-          test: ["./packages/utils"],
+          test: ["./packages/utils"], // core depends on utils
         },
         "./packages/ui": {
-          test: ["./packages/utils"],
+          test: ["./packages/utils"], // ui depends on utils
         },
         "./apps/web": {
-          test: ["./packages/ui"],
+          test: ["./packages/ui"], // web depends on ui
         },
       },
     };
@@ -87,16 +87,16 @@ Deno.test("Integration Dependency - test pattern with clients", async () => {
       "apps/web/deno.json": JSON.stringify({ name: "web" }),
     });
 
-    // Test from utils package - should test utils + its clients (core, ui)
+    // Test from utils package - should only test configured dependencies + utils
     const result = await runCli(["test"], `${tempDir}/packages/utils`);
 
     assertEquals(result.exitCode, 0);
-    assertStringIncludes(result.stdout, "Execution plan: 4 tasks");
+    assertStringIncludes(result.stdout, "Execution plan: 2 tasks");
     assertStringIncludes(result.stdout, "→ ./packages/base test");
     assertStringIncludes(result.stdout, "→ ./packages/utils test");
-    assertStringIncludes(result.stdout, "→ ./packages/core test");
-    assertStringIncludes(result.stdout, "→ ./packages/ui test");
-    // Should NOT include web app (indirect client)
+    // Should NOT auto-discover clients
+    assertEquals(result.stdout.includes("./packages/core"), false);
+    assertEquals(result.stdout.includes("./packages/ui"), false);
     assertEquals(result.stdout.includes("./apps/web"), false);
   } finally {
     await Deno.remove(tempDir, { recursive: true });

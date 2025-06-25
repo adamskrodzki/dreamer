@@ -117,11 +117,11 @@ my-workspace/
 
 ### Usage Examples
 ```bash
-# Test utils and all its clients (core, ui, web)
+# Test utils and its configured test targets (core, ui, web)
 cd packages/utils
 dream test
 
-# Test core and all its clients (ui, web)
+# Test core and its configured test targets (ui, web)
 cd packages/core
 dream test
 
@@ -134,9 +134,9 @@ dream dev
 
 **When running `dream test` from `packages/utils`:**
 1. `./packages/utils` test (self)
-2. `./packages/core` test (client of utils)
-3. `./packages/ui` test (client of utils)
-4. `./apps/web` test (client of utils)
+2. `./packages/core` test (configured target)
+3. `./packages/ui` test (configured target)
+4. `./apps/web` test (configured target)
 
 **When running `dream dev` from `apps/web`:**
 1. `./packages/utils` build (dependency)
@@ -775,6 +775,60 @@ dream deploy  # Deploy to staging/production
 }
 ```
 
+## Understanding Dependencies vs Dependents
+
+### Key Concept
+Dream CLI should only execute **explicitly configured dependencies**, never auto-discover dependent projects.
+
+### Configuration Patterns
+
+**Pattern 1: Dependency-based Configuration**
+Configure each project to list its dependencies:
+```json
+{
+  "workspace": {
+    "./utils": {
+      "test": []  // No dependencies
+    },
+    "./api": {
+      "test": ["./utils"]  // api depends on utils
+    },
+    "./web": {
+      "test": ["./utils", "./api"]  // web depends on both
+    }
+  }
+}
+```
+
+**Pattern 2: Client Impact Testing Configuration**
+Configure shared libraries to list their clients for testing:
+```json
+{
+  "workspace": {
+    "./utils": {
+      "test": ["./api", "./web"]  // Test clients when utils changes
+    },
+    "./api": {
+      "test": ["./web"]  // Test web when api changes
+    },
+    "./web": {
+      "test": []  // No clients to test
+    }
+  }
+}
+```
+
+### Correct CLI Behavior
+**Both patterns are valid configurations**, but the CLI should:
+- Only execute the explicitly configured dependencies/targets
+- Never auto-discover additional projects beyond what's configured
+- Execute tasks in the order: configured dependencies → current project
+
+### What Dream CLI Should NOT Do
+- Auto-discover projects that depend on the current project
+- Execute tasks for projects not explicitly listed in configuration
+- Guess relationships between projects
+
 ## Best Practices from Examples
 
 1. **Use async for long-running services**: Database, API servers
@@ -783,3 +837,4 @@ dream deploy  # Deploy to staging/production
 4. **Make dev dependencies optional**: Use `required: false` for development-only services
 5. **Separate test types**: Unit, integration, e2e with different dependency chains
 6. **Use consistent naming**: Standard task names across all projects
+7. **Configure dependencies explicitly**: Never rely on auto-discovery of dependent projects

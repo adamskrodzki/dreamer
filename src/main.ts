@@ -27,9 +27,9 @@ OPTIONS:
     -i, --info       Show configuration discovery and workspace information
 
 EXAMPLES:
-    dream test       Test current project + all its clients
+    dream test       Test configured dependencies + current project
     dream dev        Start required services + current project dev
-    dream build      Build current project + configured dependencies
+    dream build      Build configured dependencies + current project
     dream --help     Show this help message
     dream --version  Show version information
 

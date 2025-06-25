@@ -183,65 +183,15 @@ export class DependencyResolver {
     tasks.push(taskExecution);
   }
 
-  /**
-   * Gets all projects that depend on the given project for the specified task
-   * This is used for "client impact testing" - finding all projects that would be affected
-   */
-  getClients(projectPath: string, taskName: string): string[] {
-    const clients: string[] = [];
 
-    for (const [clientProjectPath, clientConfig] of Object.entries(this.config.workspace)) {
-      const clientTaskDeps = clientConfig[taskName] || [];
-
-      for (const dependency of clientTaskDeps) {
-        const { depProjectPath } = this.parseDependency(dependency, taskName);
-        if (depProjectPath === projectPath) {
-          clients.push(clientProjectPath);
-          break; // Found this client, no need to check other dependencies
-        }
-      }
-    }
-
-    return clients;
-  }
 
   /**
-   * Resolves dependencies for testing pattern: test current project + all its clients
-   * Only includes clients if the current project has test dependencies (indicating it's a library/service)
+   * Resolves dependencies for testing pattern: execute configured dependencies + current project
+   * Uses the same dependency-only resolution logic as resolve()
    */
   resolveTestPattern(projectPath: string, taskName: string = "test"): ExecutionPlan {
-    const visited = new Set<string>();
-    const visiting = new Set<string>();
-    const tasks: TaskExecution[] = [];
-
-    // Check if this project/task should use recursive resolution
-    const useRecursive = this.shouldUseRecursiveResolution(projectPath, taskName);
-
-    // First, add the current project's task (which will resolve its dependencies)
-    if (useRecursive) {
-      this.resolveDependencies(projectPath, taskName, visited, visiting, tasks);
-    } else {
-      this.resolveNonRecursive(projectPath, taskName, visited, tasks);
-    }
-
-    // Only add clients if this project has test dependencies (indicating it's a library/service that others depend on)
-    const projectConfig = this.config.workspace[projectPath];
-    const hasDependencies = projectConfig && projectConfig[taskName] && projectConfig[taskName].length > 0;
-
-    if (hasDependencies) {
-      // Then, add all client projects that depend on this project
-      const clients = this.getClients(projectPath, taskName);
-      for (const clientPath of clients) {
-        const clientUseRecursive = this.shouldUseRecursiveResolution(clientPath, taskName);
-        if (clientUseRecursive) {
-          this.resolveDependencies(clientPath, taskName, visited, visiting, tasks);
-        } else {
-          this.resolveNonRecursive(clientPath, taskName, visited, tasks);
-        }
-      }
-    }
-
-    return { tasks };
+    // resolveTestPattern now behaves identically to resolve()
+    return this.resolve(projectPath, taskName);
   }
 
   /**

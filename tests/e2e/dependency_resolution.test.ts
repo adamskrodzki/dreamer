@@ -6,19 +6,19 @@ import { runCliE2E as runCli } from "../utils/test_helpers.ts";
  * Tests the complete dependency resolution workflow with actual CLI execution
  */
 
-Deno.test("E2E Dependency - Simple Monorepo test pattern", async () => {
-  // Test from utils package - should test utils + all its clients
+Deno.test("E2E Dependency - Simple Monorepo test pattern (corrected)", async () => {
+  // Test from utils package - should only execute explicitly configured dependencies
   const result = await runCli(["test"], "examples/simple-monorepo/packages/utils", true);
 
   assertEquals(result.exitCode, 0, "Test command should succeed");
   assertStringIncludes(result.stdout, "Executing task: test");
   assertStringIncludes(result.stdout, "Execution plan: 4 tasks");
-  
-  // Should test utils + all its clients (core, ui, web)
-  assertStringIncludes(result.stdout, "4.  → ./packages/utils test");
+
+  // Should execute explicitly configured test targets: core, ui, web, then utils
   assertStringIncludes(result.stdout, "1.  → ./packages/core test");
   assertStringIncludes(result.stdout, "2.  → ./packages/ui test");
   assertStringIncludes(result.stdout, "3.  → ./apps/web test");
+  assertStringIncludes(result.stdout, "4.  → ./packages/utils test");
 });
 
 Deno.test("E2E Dependency - Simple Monorepo dev pattern", async () => {
@@ -445,12 +445,12 @@ Deno.test("E2E Task Execution - Debug output shows execution details", async () 
   }
 });
 
-Deno.test("E2E Dependency - Help shows dependency resolution info", async () => {
+Deno.test("E2E Dependency - Help shows dependency resolution info (corrected)", async () => {
   const result = await runCli(["--help"], "examples/simple-monorepo");
 
   assertEquals(result.exitCode, 0, "Help should work");
   assertStringIncludes(result.stdout, "dream test");
-  assertStringIncludes(result.stdout, "Test current project + all its clients");
+  assertStringIncludes(result.stdout, "Test configured dependencies + current project");
   assertStringIncludes(result.stdout, "dream dev");
   assertStringIncludes(result.stdout, "Start required services + current project dev");
 });

@@ -452,50 +452,25 @@ Deno.test("DependencyResolver - project not in config", () => {
   assertEquals(plan.tasks[1].id, "./packages/utils:test");
 });
 
-Deno.test("DependencyResolver - getClients functionality", () => {
+// NOTE: getClients() method will be removed as part of dependency resolution fix
+
+Deno.test("DependencyResolver - resolveTestPattern (corrected behavior)", () => {
   const config: DreamConfig = {
     workspace: {
       "./packages/utils": {
-        test: [],
-      },
-      "./packages/core": {
-        test: ["./packages/utils"],
-      },
-      "./packages/ui": {
-        test: ["./packages/utils", "./packages/core"],
-      },
-      "./apps/web": {
-        test: ["./packages/ui"],
-      },
-    },
-  };
-
-  const resolver = new DependencyResolver(config);
-  const clients = resolver.getClients("./packages/utils", "test");
-
-  assertEquals(clients.length, 2);
-  assertEquals(clients.includes("./packages/core"), true);
-  assertEquals(clients.includes("./packages/ui"), true);
-  assertEquals(clients.includes("./apps/web"), false); // Indirect client
-});
-
-Deno.test("DependencyResolver - resolveTestPattern", () => {
-  const config: DreamConfig = {
-    workspace: {
-      "./packages/utils": {
-        test: ["./packages/base"], // Give utils some dependencies so it will include clients
+        test: ["./packages/base"], // utils depends on base
       },
       "./packages/base": {
         test: [],
       },
       "./packages/core": {
-        test: ["./packages/utils"],
+        test: ["./packages/utils"], // core depends on utils
       },
       "./packages/ui": {
-        test: ["./packages/utils"],
+        test: ["./packages/utils"], // ui depends on utils
       },
       "./apps/web": {
-        test: ["./packages/ui"],
+        test: ["./packages/ui"], // web depends on ui
       },
     },
   };
@@ -503,14 +478,14 @@ Deno.test("DependencyResolver - resolveTestPattern", () => {
   const resolver = new DependencyResolver(config);
   const plan = resolver.resolveTestPattern("./packages/utils", "test");
 
-  // Should test utils + its direct clients (core, ui)
-  assertEquals(plan.tasks.length, 4);
+  // Should only test utils and its configured dependencies (base), NOT its clients
+  assertEquals(plan.tasks.length, 2, "Should only execute configured dependencies + current project");
   const taskIds = plan.tasks.map(t => t.id);
-  assertEquals(taskIds.includes("./packages/base:test"), true);
-  assertEquals(taskIds.includes("./packages/utils:test"), true);
-  assertEquals(taskIds.includes("./packages/core:test"), true);
-  assertEquals(taskIds.includes("./packages/ui:test"), true);
-  assertEquals(taskIds.includes("./apps/web:test"), false); // Indirect client
+  assertEquals(taskIds.includes("./packages/base:test"), true, "Should include configured dependency");
+  assertEquals(taskIds.includes("./packages/utils:test"), true, "Should include current project");
+  assertEquals(taskIds.includes("./packages/core:test"), false, "Should NOT auto-discover core (client)");
+  assertEquals(taskIds.includes("./packages/ui:test"), false, "Should NOT auto-discover ui (client)");
+  assertEquals(taskIds.includes("./apps/web:test"), false, "Should NOT auto-discover web (indirect client)");
 });
 
 Deno.test("DependencyResolver - resolveDevPattern (non-recursive)", () => {
