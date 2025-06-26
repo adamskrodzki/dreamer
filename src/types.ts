@@ -54,9 +54,26 @@ export interface TaskResult {
   taskExecution: TaskExecution;
 }
 
+// Background process management types
+export interface BackgroundProcess {
+  id: string;
+  taskExecution: TaskExecution;
+  startTime: number;
+  status: ProcessStatus;
+  promise: Promise<TaskResult>;
+  result?: TaskResult;
+}
+
+export type ProcessStatus = 'starting' | 'running' | 'completed' | 'failed' | 'terminated';
+
 // Process runner interface for dependency injection
 export interface ProcessRunner {
   run(command: string, args: string[], options: ProcessRunnerOptions): Promise<TaskResult>;
+}
+
+// Extended process runner interface with termination support (for testing)
+export interface ProcessRunnerWithTermination extends ProcessRunner {
+  terminateProcess(processId: string): void;
 }
 
 // Process runner options

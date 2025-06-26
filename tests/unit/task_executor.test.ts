@@ -1,7 +1,7 @@
 import { assertEquals } from "jsr:@std/assert@^1.0.0";
 import { MockProcessRunner, TaskExecutor } from "../../src/task_executor.ts";
-import { TaskExecutionError } from "../../src/errors.ts";
-import type { TaskExecution } from "../../src/types.ts";
+import { DreamRunner } from "../../src/dream_runner.ts";
+import type { TaskExecution, ExecutionPlan } from "../../src/types.ts";
 
 Deno.test("TaskExecutor - executeTask success", async () => {
   const mockRunner = new MockProcessRunner();
@@ -71,7 +71,7 @@ Deno.test("TaskExecutor - executeTask failure with required task (no throw)", as
 
 Deno.test("TaskExecutor - executeTaskWithErrorHandling throws on required failure", async () => {
   const mockRunner = new MockProcessRunner();
-  const executor = new TaskExecutor(mockRunner, "/workspace");
+  const runner = new DreamRunner(mockRunner, "/workspace");
 
   const taskExecution: TaskExecution = {
     id: "./packages/utils:test",
@@ -82,6 +82,10 @@ Deno.test("TaskExecutor - executeTaskWithErrorHandling throws on required failur
     delay: 0,
   };
 
+  const executionPlan: ExecutionPlan = {
+    tasks: [taskExecution],
+  };
+
   mockRunner.setMockResult("deno", ["task", "test"], {
     success: false,
     exitCode: 1,
@@ -90,17 +94,16 @@ Deno.test("TaskExecutor - executeTaskWithErrorHandling throws on required failur
     duration: 500,
   });
 
-  try {
-    await executor.executeTaskWithErrorHandling(taskExecution);
-    throw new Error("Expected TaskExecutionError to be thrown");
-  } catch (error) {
-    assertEquals(error instanceof TaskExecutionError, true);
-    if (error instanceof TaskExecutionError) {
-      assertEquals(error.message, "Task ./packages/utils:test failed with exit code 1");
-      assertEquals(error.exitCode, 1);
-      assertEquals(error.stderr, "Test failed");
-    }
-  }
+  // DreamRunner.execute doesn't throw on required task failure, it returns a summary
+  // So we need to check the summary results instead
+  const summary = await runner.execute(executionPlan);
+
+  assertEquals(summary.failedTasks, 1);
+  assertEquals(summary.successfulTasks, 0);
+  assertEquals(summary.totalTasks, 1);
+  assertEquals(summary.results[0].success, false);
+  assertEquals(summary.results[0].exitCode, 1);
+  assertEquals(summary.results[0].stderr, "Test failed");
 });
 
 Deno.test("TaskExecutor - executeTask failure with optional task", async () => {
@@ -134,7 +137,7 @@ Deno.test("TaskExecutor - executeTask failure with optional task", async () => {
 
 Deno.test("TaskExecutor - executeTasks sequence success", async () => {
   const mockRunner = new MockProcessRunner();
-  const executor = new TaskExecutor(mockRunner, "/workspace");
+  const runner = new DreamRunner(mockRunner, "/workspace");
 
   const taskExecutions: TaskExecution[] = [
     {
@@ -155,6 +158,10 @@ Deno.test("TaskExecutor - executeTasks sequence success", async () => {
     },
   ];
 
+  const executionPlan: ExecutionPlan = {
+    tasks: taskExecutions,
+  };
+
   mockRunner.setMockResult("deno", ["task", "test"], {
     success: true,
     exitCode: 0,
@@ -163,11 +170,13 @@ Deno.test("TaskExecutor - executeTasks sequence success", async () => {
     duration: 1000,
   });
 
-  const results = await executor.executeTasks(taskExecutions);
+  const summary = await runner.execute(executionPlan);
 
-  assertEquals(results.length, 2);
-  assertEquals(results[0].success, true);
-  assertEquals(results[1].success, true);
+  assertEquals(summary.results.length, 2);
+  assertEquals(summary.results[0].success, true);
+  assertEquals(summary.results[1].success, true);
+  assertEquals(summary.successfulTasks, 2);
+  assertEquals(summary.failedTasks, 0);
 
   // Verify both commands were called
   const callLog = mockRunner.getCallLog();
@@ -178,7 +187,7 @@ Deno.test("TaskExecutor - executeTasks sequence success", async () => {
 
 Deno.test("TaskExecutor - executeTasks stops on required task failure", async () => {
   const mockRunner = new MockProcessRunner();
-  const executor = new TaskExecutor(mockRunner, "/workspace");
+  const runner = new DreamRunner(mockRunner, "/workspace");
 
   const taskExecutions: TaskExecution[] = [
     {
@@ -199,6 +208,10 @@ Deno.test("TaskExecutor - executeTasks stops on required task failure", async ()
     },
   ];
 
+  const executionPlan: ExecutionPlan = {
+    tasks: taskExecutions,
+  };
+
   // First task fails
   mockRunner.setMockResult("deno", ["task", "test"], {
     success: false,
@@ -208,13 +221,15 @@ Deno.test("TaskExecutor - executeTasks stops on required task failure", async ()
     duration: 500,
   });
 
-  // executeTasks should not throw, but should stop execution after first failure
-  const results = await executor.executeTasks(taskExecutions);
+  // DreamRunner should stop execution after first failure
+  const summary = await runner.execute(executionPlan);
 
   // Should only have 1 result (second task should not execute due to first failure)
-  assertEquals(results.length, 1);
-  assertEquals(results[0].success, false);
-  assertEquals(results[0].exitCode, 1);
+  assertEquals(summary.results.length, 1);
+  assertEquals(summary.results[0].success, false);
+  assertEquals(summary.results[0].exitCode, 1);
+  assertEquals(summary.failedTasks, 1);
+  assertEquals(summary.skippedTasks, 1);
 
   // Verify only 1 task was called (second was skipped)
   const callLog = mockRunner.getCallLog();
@@ -224,7 +239,7 @@ Deno.test("TaskExecutor - executeTasks stops on required task failure", async ()
 
 Deno.test("TaskExecutor - executeTasks continues on optional task failure", async () => {
   const mockRunner = new MockProcessRunner();
-  const executor = new TaskExecutor(mockRunner, "/workspace");
+  const runner = new DreamRunner(mockRunner, "/workspace");
 
   const taskExecutions: TaskExecution[] = [
     {
@@ -245,6 +260,10 @@ Deno.test("TaskExecutor - executeTasks continues on optional task failure", asyn
     },
   ];
 
+  const executionPlan: ExecutionPlan = {
+    tasks: taskExecutions,
+  };
+
   // Set mock result for both calls
   mockRunner.setMockResult("deno", ["task", "test"], {
     success: false,
@@ -254,11 +273,14 @@ Deno.test("TaskExecutor - executeTasks continues on optional task failure", asyn
     duration: 500,
   });
 
-  const results = await executor.executeTasks(taskExecutions);
+  const summary = await runner.execute(executionPlan);
 
-  assertEquals(results.length, 2);
-  assertEquals(results[0].success, false); // First task failed
-  assertEquals(results[1].success, false); // Second task also uses same mock (failed)
+  assertEquals(summary.results.length, 2);
+  assertEquals(summary.results[0].success, false); // First task failed
+  assertEquals(summary.results[1].success, false); // Second task also uses same mock (failed)
+  assertEquals(summary.failedTasks, 2);
+  assertEquals(summary.successfulTasks, 0);
+  assertEquals(summary.skippedTasks, 0); // No tasks skipped since they're optional
 
   // Verify both commands were called
   const callLog = mockRunner.getCallLog();
@@ -379,9 +401,9 @@ Deno.test("MockProcessRunner - reset functionality", async () => {
   assertEquals(result.success, true); // Default is success
 });
 
-Deno.test("TaskExecutor - async task execution", async () => {
+Deno.test("TaskExecutor - async task execution (NEEDS FIX: should verify concurrency)", async () => {
   const mockRunner = new MockProcessRunner();
-  const executor = new TaskExecutor(mockRunner, "/workspace");
+  const runner = new DreamRunner(mockRunner, "/workspace");
 
   const taskExecutions: TaskExecution[] = [
     {
@@ -398,7 +420,7 @@ Deno.test("TaskExecutor - async task execution", async () => {
       taskName: "dev",
       async: true,
       required: true,
-      delay: 100, // Small delay for testing
+      delay: 100, // 100ms delay AFTER starting (not before)
     },
     {
       id: "./apps/web:dev",
@@ -410,12 +432,17 @@ Deno.test("TaskExecutor - async task execution", async () => {
     },
   ];
 
+  const executionPlan: ExecutionPlan = {
+    tasks: taskExecutions,
+  };
+
+  // Set up longer durations to test concurrency
   mockRunner.setMockResult("deno", ["task", "start"], {
     success: true,
     exitCode: 0,
     stdout: "Database started",
     stderr: "",
-    duration: 50,
+    duration: 500, // 500ms task
   });
 
   mockRunner.setMockResult("deno", ["task", "dev"], {
@@ -423,31 +450,43 @@ Deno.test("TaskExecutor - async task execution", async () => {
     exitCode: 0,
     stdout: "Service started",
     stderr: "",
-    duration: 30,
+    duration: 300, // 300ms task
   });
 
-  const results = await executor.executeTasks(taskExecutions);
+  const startTime = Date.now();
+  const summary = await runner.execute(executionPlan);
+  const totalTime = Date.now() - startTime;
 
-  assertEquals(results.length, 3);
-  assertEquals(results[0].success, true);
-  assertEquals(results[1].success, true);
-  assertEquals(results[2].success, true);
+  assertEquals(summary.results.length, 3);
+  assertEquals(summary.results[0].success, true);
+  assertEquals(summary.results[1].success, true);
+  assertEquals(summary.results[2].success, true);
+  assertEquals(summary.successfulTasks, 3);
+  assertEquals(summary.failedTasks, 0);
 
   // Verify all tasks were called
   const callLog = mockRunner.getCallLog();
   assertEquals(callLog.length, 3);
+
+  // TODO: Once async execution is implemented correctly, verify timing:
+  // With correct concurrent execution: ~max(500, 300) + 100ms delay + web_time = ~600ms
+  // With current sequential execution: 500 + 100 + 300 + web_time = ~900ms+
+  console.log(`Current execution time: ${totalTime}ms (should be ~600ms with concurrency, ~900ms+ sequential)`);
+
+  // TODO: Uncomment when async execution is fixed:
+  // assertEquals(totalTime < 700, true, `Expected concurrent execution (~600ms), got ${totalTime}ms`);
 });
 
-Deno.test("TaskExecutor - mixed async and sync execution", async () => {
+Deno.test("TaskExecutor - mixed async and sync execution (NEEDS FIX: timing expectations)", async () => {
   const mockRunner = new MockProcessRunner();
-  const executor = new TaskExecutor(mockRunner, "/workspace");
+  const runner = new DreamRunner(mockRunner, "/workspace");
 
   const taskExecutions: TaskExecution[] = [
     {
       id: "./packages/utils:build",
       projectPath: "./packages/utils",
       taskName: "build",
-      async: false, // Sync task
+      async: false, // Sync task - blocks until complete
       required: true,
       delay: 0,
     },
@@ -455,7 +494,7 @@ Deno.test("TaskExecutor - mixed async and sync execution", async () => {
       id: "./services/database:start",
       projectPath: "./services/database",
       taskName: "start",
-      async: true, // Async task
+      async: true, // Async task - runs in background
       required: true,
       delay: 0,
     },
@@ -463,18 +502,22 @@ Deno.test("TaskExecutor - mixed async and sync execution", async () => {
       id: "./services/api:dev",
       projectPath: "./services/api",
       taskName: "dev",
-      async: true, // Async task
+      async: true, // Async task - runs in background
       required: true,
-      delay: 0,
+      delay: 500, // 500ms delay AFTER starting
     },
   ];
+
+  const executionPlan: ExecutionPlan = {
+    tasks: taskExecutions,
+  };
 
   mockRunner.setMockResult("deno", ["task", "build"], {
     success: true,
     exitCode: 0,
     stdout: "Build completed",
     stderr: "",
-    duration: 20,
+    duration: 200, // 200ms sync task
   });
 
   mockRunner.setMockResult("deno", ["task", "start"], {
@@ -482,7 +525,7 @@ Deno.test("TaskExecutor - mixed async and sync execution", async () => {
     exitCode: 0,
     stdout: "Database started",
     stderr: "",
-    duration: 30,
+    duration: 400, // 400ms async task
   });
 
   mockRunner.setMockResult("deno", ["task", "dev"], {
@@ -490,26 +533,41 @@ Deno.test("TaskExecutor - mixed async and sync execution", async () => {
     exitCode: 0,
     stdout: "API started",
     stderr: "",
-    duration: 25,
+    duration: 300, // 300ms async task
   });
 
-  const results = await executor.executeTasks(taskExecutions);
+  const startTime = Date.now();
+  const summary = await runner.execute(executionPlan);
+  const totalTime = Date.now() - startTime;
 
-  assertEquals(results.length, 3);
+  assertEquals(summary.results.length, 3);
+  assertEquals(summary.successfulTasks, 3);
+  assertEquals(summary.failedTasks, 0);
 
   // All tasks should succeed
-  for (const result of results) {
+  for (const result of summary.results) {
     assertEquals(result.success, true);
   }
 
   // Verify all tasks were called
   const callLog = mockRunner.getCallLog();
   assertEquals(callLog.length, 3);
+
+  // TODO: Once mixed execution is implemented correctly, verify timing:
+  // Expected flow:
+  // 1. Utils builds (sync, 200ms) - blocks
+  // 2. Database starts in background (async, 400ms)
+  // 3. API starts in background (async, 300ms), then 500ms delay
+  // Total: 200ms + max(400ms, 300ms + 500ms) = 200ms + 800ms = 1000ms
+  console.log(`Mixed execution time: ${totalTime}ms (should be ~1000ms with correct async/sync handling)`);
+
+  // TODO: Uncomment when mixed execution is fixed:
+  // assertEquals(totalTime >= 900 && totalTime <= 1200, true, `Expected ~1000ms, got ${totalTime}ms`);
 });
 
 Deno.test("TaskExecutor - async task failure handling", async () => {
   const mockRunner = new MockProcessRunner();
-  const executor = new TaskExecutor(mockRunner, "/workspace");
+  const runner = new DreamRunner(mockRunner, "/workspace");
 
   const taskExecutions: TaskExecution[] = [
     {
@@ -530,6 +588,10 @@ Deno.test("TaskExecutor - async task failure handling", async () => {
     },
   ];
 
+  const executionPlan: ExecutionPlan = {
+    tasks: taskExecutions,
+  };
+
   mockRunner.setMockResult("deno", ["task", "start"], {
     success: true,
     exitCode: 0,
@@ -546,17 +608,19 @@ Deno.test("TaskExecutor - async task failure handling", async () => {
     duration: 10,
   });
 
-  const results = await executor.executeTasks(taskExecutions);
+  const summary = await runner.execute(executionPlan);
 
-  assertEquals(results.length, 2);
-  assertEquals(results[0].success, true);
-  assertEquals(results[1].success, false);
-  assertEquals(results[1].exitCode, 1);
+  assertEquals(summary.results.length, 2);
+  assertEquals(summary.results[0].success, true);
+  assertEquals(summary.results[1].success, false);
+  assertEquals(summary.results[1].exitCode, 1);
+  assertEquals(summary.successfulTasks, 1);
+  assertEquals(summary.failedTasks, 1);
 });
 
 Deno.test("TaskExecutor - required task failure stops execution", async () => {
   const mockRunner = new MockProcessRunner();
-  const executor = new TaskExecutor(mockRunner, "/workspace");
+  const runner = new DreamRunner(mockRunner, "/workspace");
 
   const taskExecutions: TaskExecution[] = [
     {
@@ -585,6 +649,10 @@ Deno.test("TaskExecutor - required task failure stops execution", async () => {
     },
   ];
 
+  const executionPlan: ExecutionPlan = {
+    tasks: taskExecutions,
+  };
+
   // First task succeeds
   mockRunner.setMockResult("deno", ["task", "build"], {
     success: true,
@@ -612,13 +680,16 @@ Deno.test("TaskExecutor - required task failure stops execution", async () => {
     duration: 75,
   });
 
-  const results = await executor.executeTasks(taskExecutions);
+  const summary = await runner.execute(executionPlan);
 
   // Should only have 2 results (third task should not execute)
-  assertEquals(results.length, 2);
-  assertEquals(results[0].success, true);
-  assertEquals(results[1].success, false);
-  assertEquals(results[1].exitCode, 1);
+  assertEquals(summary.results.length, 2);
+  assertEquals(summary.results[0].success, true);
+  assertEquals(summary.results[1].success, false);
+  assertEquals(summary.results[1].exitCode, 1);
+  assertEquals(summary.successfulTasks, 1);
+  assertEquals(summary.failedTasks, 1);
+  assertEquals(summary.skippedTasks, 1);
 
   // Verify only 2 tasks were called (third was skipped due to failure)
   const callLog = mockRunner.getCallLog();
@@ -627,7 +698,7 @@ Deno.test("TaskExecutor - required task failure stops execution", async () => {
 
 Deno.test("TaskExecutor - optional task failure continues execution", async () => {
   const mockRunner = new MockProcessRunner();
-  const executor = new TaskExecutor(mockRunner, "/workspace");
+  const runner = new DreamRunner(mockRunner, "/workspace");
 
   const taskExecutions: TaskExecution[] = [
     {
@@ -656,6 +727,10 @@ Deno.test("TaskExecutor - optional task failure continues execution", async () =
     },
   ];
 
+  const executionPlan: ExecutionPlan = {
+    tasks: taskExecutions,
+  };
+
   // First task succeeds
   mockRunner.setMockResult("deno", ["task", "build"], {
     success: true,
@@ -674,48 +749,55 @@ Deno.test("TaskExecutor - optional task failure continues execution", async () =
     duration: 50,
   });
 
-  const results = await executor.executeTasks(taskExecutions);
+  const summary = await runner.execute(executionPlan);
 
   // Should have all 3 results (execution continues despite optional failure)
-  assertEquals(results.length, 3);
-  assertEquals(results[0].success, true);
-  assertEquals(results[1].success, false); // Optional task failed
-  assertEquals(results[2].success, true); // But execution continued
+  assertEquals(summary.results.length, 3);
+  assertEquals(summary.results[0].success, true);
+  assertEquals(summary.results[1].success, false); // Optional task failed
+  assertEquals(summary.results[2].success, true); // But execution continued
+  assertEquals(summary.successfulTasks, 2);
+  assertEquals(summary.failedTasks, 1);
+  assertEquals(summary.skippedTasks, 0);
 
   // Verify all 3 tasks were called
   const callLog = mockRunner.getCallLog();
   assertEquals(callLog.length, 3);
 });
 
-Deno.test("TaskExecutor - delay parameter effect", async () => {
+Deno.test("TaskExecutor - delay parameter effect (NEEDS FIX: async vs sync delay timing)", async () => {
   const mockRunner = new MockProcessRunner();
-  const executor = new TaskExecutor(mockRunner, "/workspace");
+  const runner = new DreamRunner(mockRunner, "/workspace");
 
   const taskExecutions: TaskExecution[] = [
     {
       id: "./services/database:start",
       projectPath: "./services/database",
       taskName: "start",
-      async: false,
+      async: true, // Async task - delay AFTER starting
       required: true,
-      delay: 100, // 100ms delay
+      delay: 100, // 100ms delay AFTER starting
     },
     {
       id: "./services/api:dev",
       projectPath: "./services/api",
       taskName: "dev",
-      async: false,
+      async: false, // Sync task - delay BEFORE starting
       required: true,
-      delay: 200, // 200ms delay
+      delay: 200, // 200ms delay BEFORE starting
     },
   ];
+
+  const executionPlan: ExecutionPlan = {
+    tasks: taskExecutions,
+  };
 
   mockRunner.setMockResult("deno", ["task", "start"], {
     success: true,
     exitCode: 0,
     stdout: "Database started",
     stderr: "",
-    duration: 50,
+    duration: 300, // 300ms task
   });
 
   mockRunner.setMockResult("deno", ["task", "dev"], {
@@ -723,18 +805,28 @@ Deno.test("TaskExecutor - delay parameter effect", async () => {
     exitCode: 0,
     stdout: "API started",
     stderr: "",
-    duration: 50,
+    duration: 150, // 150ms task
   });
 
   const startTime = Date.now();
-  const results = await executor.executeTasks(taskExecutions);
+  const summary = await runner.execute(executionPlan);
   const totalTime = Date.now() - startTime;
 
-  assertEquals(results.length, 2);
-  assertEquals(results[0].success, true);
-  assertEquals(results[1].success, true);
+  assertEquals(summary.results.length, 2);
+  assertEquals(summary.results[0].success, true);
+  assertEquals(summary.results[1].success, true);
+  assertEquals(summary.successfulTasks, 2);
+  assertEquals(summary.failedTasks, 0);
 
-  // In mock mode, delays are skipped, so we just verify the structure works
-  // In real execution, this would take at least 300ms (100 + 200 delays + execution time)
-  console.log(`Execution time with delays: ${totalTime}ms`);
+  // TODO: Once delay timing is fixed, verify correct behavior:
+  // Expected flow:
+  // 1. Database starts immediately (async), runs for 300ms
+  // 2. Wait 100ms after database starts (async delay)
+  // 3. Wait 200ms before starting API (sync delay)
+  // 4. API runs for 150ms
+  // Total: max(300ms, 100ms) + 200ms + 150ms = 300ms + 200ms + 150ms = 650ms
+  console.log(`Delay execution time: ${totalTime}ms (should be ~650ms with correct async/sync delay timing)`);
+
+  // TODO: Uncomment when delay timing is fixed:
+  // assertEquals(totalTime >= 600 && totalTime <= 750, true, `Expected ~650ms, got ${totalTime}ms`);
 });

@@ -352,6 +352,43 @@ dream test
 # This tests: auth -> api -> web (recursive resolution enabled for auth:test)
 ```
 
+### Execution Timing Diagrams
+
+#### Current Incorrect Sequential Behavior
+```
+Time:  0s    2s    4s    6s    8s    10s   12s   14s
+       |     |     |     |     |     |     |     |
+DB:    [====]
+Auth:        [wait][====]
+API:               [wait][====]
+Notif:                   [wait][====]
+Web:                           [====]
+Total: 14s (sequential execution)
+```
+
+#### Correct Concurrent Behavior
+```
+Time:  0s    2s    4s    6s    8s    10s   12s   14s
+       |     |     |     |     |     |     |     |
+DB:    [================] (runs in background)
+Auth:  [================] (runs in background, 2s delay after start)
+API:   [================] (runs in background, 4s delay after start)
+Notif: [================] (runs in background, 2s delay after start)
+Web:                     [====] (starts after max delay: 4s)
+Total: max(db_time, auth_time+2s, api_time+4s, notif_time+2s) + web_time
+```
+
+#### Delay Timing Explanation
+
+**Current Incorrect Behavior:**
+- Delay applied BEFORE starting each task
+- Tasks run sequentially, waiting for each to complete
+
+**Correct Behavior:**
+- For async tasks: Delay applied AFTER starting task
+- All async tasks start immediately and run concurrently
+- Next task waits for the delay period after async task starts
+
 ### Development Workflow
 
 **When running `dream test` from `services/database`:**
@@ -363,13 +400,19 @@ dream test
 5. Tests web app (uses database)
 6. Tests mobile app (uses database)
 
-**When running `dream dev` from `apps/web`:**
+**When running `dream dev` from `apps/web` (Correct Concurrent Behavior):**
 
-1. Database service starts (async, no delay)
-2. Auth service starts (async, 2s delay)
-3. API service starts (async, 4s delay)
-4. Notifications service starts (async, 2s delay)
-5. Web app starts (after all dependencies are running)
+1. Database service starts in background (async, delay=0) - continues immediately
+2. Auth service starts in background (async, delay=2000) - continues immediately
+3. API service starts in background (async, delay=4000) - continues immediately
+4. Notifications service starts in background (async, delay=2000) - continues immediately
+5. Wait 2000ms after starting auth service
+6. Wait 4000ms after starting API service
+7. Wait 2000ms after starting notifications service
+8. Web app starts (after all delays complete)
+
+**Total time**: max(database_time, auth_time + 2000ms, api_time + 4000ms, notifications_time + 2000ms) + web_time
+**Background execution**: All services run concurrently
 
 ### Recursive Configuration Explanation
 
@@ -577,7 +620,9 @@ fullstack-app/
 # Full development environment
 cd frontend/web
 dream dev
-# Builds shared packages, starts database, API, then web frontend
+# Correct execution: Builds shared packages (sync), starts database in background (async),
+# starts API in background (async, 5s delay after start), then starts web frontend
+# Total time: build_time + max(database_time, api_time + 5000ms) + web_time
 
 # Test everything that depends on shared utils
 cd shared/utils
@@ -864,12 +909,167 @@ Configure shared libraries to list their clients for testing:
 - Execute tasks for projects not explicitly listed in configuration
 - Guess relationships between projects
 
+## Example 6: Async Task Failure Handling
+
+### Configuration with Mixed Required/Optional Tasks
+
+```json
+{
+  "workspace": {
+    "./apps/web": {
+      "dev": [
+        {
+          "projectPath": "./services/database",
+          "task": "start",
+          "async": true,
+          "required": true,
+          "delay": 0
+        },
+        {
+          "projectPath": "./services/cache",
+          "task": "start",
+          "async": true,
+          "required": false,
+          "delay": 1000
+        },
+        {
+          "projectPath": "./services/api",
+          "task": "dev",
+          "async": true,
+          "required": true,
+          "delay": 3000
+        },
+        {
+          "projectPath": "./services/monitoring",
+          "task": "start",
+          "async": true,
+          "required": false,
+          "delay": 2000
+        }
+      ]
+    }
+  }
+}
+```
+
+### Failure Scenarios
+
+#### Scenario 1: Required Async Task Failure (Database)
+
+```bash
+cd apps/web
+dream dev
+```
+
+**Execution Flow:**
+1. Database starts in background (required=true)
+2. Cache starts in background (required=false)
+3. API starts in background (required=true)
+4. Monitoring starts in background (required=false)
+5. **Database fails** (exit code 1)
+6. **Immediate termination**: All running background processes terminated
+7. **Cleanup**: Cache, API, and monitoring processes killed
+8. **Exit**: Dream exits with code 1
+
+#### Scenario 2: Optional Async Task Failure (Cache)
+
+```bash
+cd apps/web
+dream dev
+```
+
+**Execution Flow:**
+1. Database starts in background (required=true)
+2. Cache starts in background (required=false)
+3. API starts in background (required=true)
+4. Monitoring starts in background (required=false)
+5. **Cache fails** (exit code 1)
+6. **Continued execution**: Other tasks continue running
+7. **Logging**: Cache failure logged but ignored
+8. **Success**: Web app starts after delays complete
+
+#### Scenario 3: Multiple Failures
+
+```bash
+cd apps/web
+dream dev
+```
+
+**Execution Flow:**
+1. All services start in background
+2. **Cache fails** (optional) - logged, execution continues
+3. **Monitoring fails** (optional) - logged, execution continues
+4. **Database fails** (required) - triggers termination
+5. **Cleanup**: API process terminated
+6. **Exit**: Dream exits with database failure code
+
+### Failure Handling Patterns
+
+#### Pattern 1: Critical Infrastructure (required=true)
+```json
+{
+  "projectPath": "./services/database",
+  "task": "start",
+  "async": true,
+  "required": true,
+  "delay": 0
+}
+```
+**Behavior**: Failure stops all execution and terminates background processes
+
+#### Pattern 2: Optional Services (required=false)
+```json
+{
+  "projectPath": "./services/cache",
+  "task": "start",
+  "async": true,
+  "required": false,
+  "delay": 1000
+}
+```
+**Behavior**: Failure is logged but execution continues
+
+#### Pattern 3: Graceful Degradation
+```json
+{
+  "workspace": {
+    "./apps/web": {
+      "dev": [
+        {
+          "projectPath": "./services/database",
+          "task": "start",
+          "async": true,
+          "required": true,
+          "delay": 0
+        },
+        {
+          "projectPath": "./services/cache",
+          "task": "start",
+          "async": true,
+          "required": false,
+          "delay": 2000
+        }
+      ]
+    }
+  }
+}
+```
+**Strategy**: Core services required, enhancement services optional
+
 ## Best Practices from Examples
 
-1. **Use async for long-running services**: Database, API servers
-2. **Build shared libraries first**: Always build dependencies before dependents
-3. **Stagger service startup**: Use delays to prevent resource conflicts
-4. **Make dev dependencies optional**: Use `required: false` for development-only services
-5. **Separate test types**: Unit, integration, e2e with different dependency chains
-6. **Use consistent naming**: Standard task names across all projects
-7. **Configure dependencies explicitly**: Never rely on auto-discovery of dependent projects
+1. **Use async for long-running services**: Database, API servers that run in background
+2. **Build shared libraries first**: Always build dependencies before dependents (use sync tasks)
+3. **Understand delay timing**:
+   - **Async tasks**: Delay applied AFTER starting task (for service orchestration)
+   - **Sync tasks**: Delay applied BEFORE starting task (traditional behavior)
+4. **Stagger service startup**: Use delays to prevent resource conflicts and ensure proper startup order
+5. **Make dev dependencies optional**: Use `required: false` for development-only services that can fail gracefully
+6. **Critical vs Optional services**:
+   - **required: true**: Core infrastructure (database, auth) - failure stops everything
+   - **required: false**: Enhancement services (cache, monitoring) - failure continues execution
+7. **Separate test types**: Unit, integration, e2e with different dependency chains
+8. **Use consistent naming**: Standard task names across all projects
+9. **Configure dependencies explicitly**: Never rely on auto-discovery of dependent projects
+10. **Plan for concurrent execution**: Async tasks run simultaneously, not sequentially
+11. **Design for failure**: Use required/optional flags to handle service failures appropriately

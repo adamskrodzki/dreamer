@@ -1,5 +1,5 @@
 import type { ProcessRunner, ProcessRunnerOptions, TaskExecution, TaskResult } from "./types.ts";
-import { TaskExecutionError } from "./errors.ts";
+//import { TaskExecutionError } from "./errors.ts";
 
 /**
  * Real process runner that executes deno task commands with real-time output streaming
@@ -174,6 +174,13 @@ export class TaskExecutor {
   }
 
   /**
+   * Get the process runner (for testing purposes)
+   */
+  getProcessRunner(): ProcessRunner {
+    return this.processRunner;
+  }
+
+  /**
    * Execute a single task
    */
   async executeTask(taskExecution: TaskExecution): Promise<TaskResult> {
@@ -192,100 +199,6 @@ export class TaskExecutor {
     result.taskExecution = taskExecution;
 
     return result;
-  }
-
-  /**
-   * Execute a single task and throw error if required task fails
-   * This method is for backward compatibility with existing code
-   */
-  async executeTaskWithErrorHandling(taskExecution: TaskExecution): Promise<TaskResult> {
-    const result = await this.executeTask(taskExecution);
-
-    // Throw error if task failed and is required
-    if (!result.success && taskExecution.required) {
-      throw new TaskExecutionError(
-        `Task ${taskExecution.id} failed with exit code ${result.exitCode}`,
-        result.exitCode,
-        result.stderr,
-      );
-    }
-
-    return result;
-  }
-
-  /**
-   * Execute multiple tasks with async support
-   */
-  async executeTasks(taskExecutions: TaskExecution[]): Promise<TaskResult[]> {
-    const results: TaskResult[] = [];
-    const asyncTasks: Promise<TaskResult>[] = [];
-
-    for (const taskExecution of taskExecutions) {
-      try {
-        if (taskExecution.async) {
-          // Start async task without waiting
-          const asyncTask = this.executeTaskWithDelay(taskExecution);
-          asyncTasks.push(asyncTask);
-        } else {
-          // Execute synchronously
-          const result = await this.executeTaskWithDelay(taskExecution);
-          results.push(result);
-
-          // If a required task fails, stop execution
-          if (!result.success && taskExecution.required) {
-            break;
-          }
-        }
-      } catch (error) {
-        // Re-throw TaskExecutionError to preserve error details
-        if (error instanceof TaskExecutionError) {
-          throw error;
-        }
-
-        // Wrap unexpected errors
-        throw new TaskExecutionError(
-          `Unexpected error executing task ${taskExecution.id}: ${error}`,
-          -1,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
-    }
-
-    // Wait for all async tasks to complete
-    if (asyncTasks.length > 0) {
-      const asyncResults = await Promise.allSettled(asyncTasks);
-
-      for (const result of asyncResults) {
-        if (result.status === "fulfilled") {
-          results.push(result.value);
-        } else {
-          // Handle rejected async tasks
-          const error = result.reason;
-          if (error instanceof TaskExecutionError) {
-            throw error;
-          }
-          throw new TaskExecutionError(
-            `Async task failed: ${error}`,
-            -1,
-            error instanceof Error ? error.message : String(error),
-          );
-        }
-      }
-    }
-
-    return results;
-  }
-
-  /**
-   * Execute a task with delay support
-   */
-  private async executeTaskWithDelay(taskExecution: TaskExecution): Promise<TaskResult> {
-    // Apply delay if specified (skip delays when mocking execution for tests)
-    if (taskExecution.delay > 0 && Deno.env.get("DREAM_MOCK_EXECUTION") !== "true") {
-      await new Promise((resolve) => setTimeout(resolve, taskExecution.delay));
-    }
-
-    return await this.executeTask(taskExecution);
   }
 
   /**

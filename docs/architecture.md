@@ -13,9 +13,10 @@ Dream CLI is a simple, focused tool for dependency-aware task execution in Deno 
 
 ## Architecture Overview
 
+### Sequential Execution Flow (Current Incorrect Behavior)
 ```
 ┌─────────────────────────────────────────┐
-│                CLI Entry                │  
+│                CLI Entry                │
 │            (src/main.ts)                │
 └─────────────────┬───────────────────────┘
                   │
@@ -31,6 +32,228 @@ Dream CLI is a simple, focused tool for dependency-aware task execution in Deno 
 │ Config  │ │ Dependency  │ │   Task      │
 │Manager  │ │ Resolver    │ │ Executor    │
 └─────────┘ └─────────────┘ └─────────────┘
+```
+
+### Concurrent Execution Flow (Correct Target Behavior)
+```
+┌─────────────────────────────────────────┐
+│                CLI Entry                │
+│            (src/main.ts)                │
+└─────────────────┬───────────────────────┘
+                  │
+┌─────────────────▼───────────────────────┐
+│            Dream Runner                 │
+│         (src/dream_runner.ts)           │
+└─────────────────┬───────────────────────┘
+                  │
+    ┌─────────────┼─────────────┐
+    │             │             │
+    ▼             ▼             ▼
+┌─────────┐ ┌─────────────┐ ┌─────────────┐
+│ Config  │ │ Dependency  │ │   Task      │
+│Manager  │ │ Resolver    │ │ Executor    │
+└─────────┘ └─────────────┘ └──────┬──────┘
+                                   │
+                    ┌──────────────┼──────────────┐
+                    │              │              │
+                    ▼              ▼              ▼
+            ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+            │   Process    │ │   Process    │ │   Failure    │
+            │   Tracker    │ │ Terminator   │ │ Propagator   │
+            └──────────────┘ └──────────────┘ └──────────────┘
+                    │              │              │
+                    └──────────────┼──────────────┘
+                                   │
+                    ┌──────────────▼──────────────┐
+                    │     Background Process      │
+                    │        Management           │
+                    │   (Concurrent Execution)    │
+                    └─────────────────────────────┘
+```
+
+## Process Lifecycle Management Architecture
+
+### Background Process Management
+
+The Dream CLI implements a sophisticated background process management system to handle async task execution:
+
+#### Process Tracking System
+
+```typescript
+export class ProcessTracker {
+  private backgroundProcesses: Map<string, BackgroundProcess> = new Map();
+  private processGroups: Map<string, BackgroundProcess[]> = new Map();
+  private processMetrics: Map<string, ProcessMetrics> = new Map();
+
+  trackProcess(process: BackgroundProcess): void {
+    // 1. Add process to main tracking map
+    // 2. Add to appropriate process group
+    // 3. Initialize metrics tracking
+    // 4. Start health monitoring
+  }
+
+  getRunningProcesses(): BackgroundProcess[] {
+    // Return all processes with status 'running'
+  }
+
+  getProcessById(id: string): BackgroundProcess | undefined {
+    // Retrieve specific process by ID
+  }
+
+  updateProcessStatus(id: string, status: ProcessStatus): void {
+    // Update process status and metrics
+  }
+
+  terminateProcessGroup(groupId: string): Promise<void> {
+    // Terminate all processes in a group (e.g., when required task fails)
+  }
+
+  getProcessMetrics(id: string): ProcessMetrics | undefined {
+    // Get performance and health metrics for a process
+  }
+
+  cleanupCompletedProcesses(): void {
+    // Remove completed/failed processes from tracking
+  }
+}
+
+export interface ProcessMetrics {
+  startTime: number;
+  lastHealthCheck: number;
+  memoryUsage?: number;
+  cpuUsage?: number;
+  exitCode?: number;
+  healthStatus: 'healthy' | 'unhealthy' | 'unknown';
+}
+
+export type ProcessStatus = 'starting' | 'running' | 'completed' | 'failed' | 'terminated' | 'cleanup';
+```
+
+#### Background Process Monitoring Design
+
+```typescript
+export class ProcessMonitor {
+  private healthCheckInterval = 1000; // 1 second
+  private healthCheckTimeouts = new Map<string, number>();
+
+  async startMonitoring(process: BackgroundProcess): Promise<void> {
+    // 1. Set up periodic health checks
+    // 2. Monitor process exit events
+    // 3. Track resource usage
+    // 4. Update process metrics
+  }
+
+  async performHealthCheck(process: BackgroundProcess): Promise<boolean> {
+    // 1. Check if process is still running
+    // 2. Verify process responsiveness (if applicable)
+    // 3. Check resource usage thresholds
+    // 4. Update health status
+  }
+
+  async stopMonitoring(processId: string): Promise<void> {
+    // 1. Clear health check intervals
+    // 2. Remove from monitoring maps
+    // 3. Final metrics collection
+  }
+
+  private async checkProcessAlive(process: BackgroundProcess): Promise<boolean> {
+    // Platform-specific process existence check
+  }
+
+  private async collectResourceMetrics(process: BackgroundProcess): Promise<ProcessMetrics> {
+    // Collect CPU, memory, and other resource usage metrics
+  }
+}
+```
+
+#### Process Lifecycle States
+
+1. **Starting**: Process is being initialized
+2. **Running**: Process is actively executing
+3. **Completed**: Process finished successfully
+4. **Failed**: Process exited with error
+5. **Terminated**: Process was forcefully stopped
+6. **Cleanup**: Process resources are being cleaned up
+
+#### Termination Strategies
+
+```typescript
+export class ProcessTerminator {
+  async gracefulTermination(process: BackgroundProcess, timeoutMs = 5000): Promise<boolean> {
+    // 1. Send SIGTERM signal to process
+    // 2. Wait up to timeoutMs for graceful shutdown
+    // 3. Return true if process exits gracefully, false if timeout
+  }
+
+  async forcefulTermination(process: BackgroundProcess): Promise<void> {
+    // 1. Send SIGKILL signal for immediate termination
+    // 2. Wait for process to be killed
+    // 3. Clean up process resources
+  }
+
+  async terminateWithCleanup(process: BackgroundProcess): Promise<void> {
+    // 1. Attempt graceful termination first
+    // 2. If graceful fails, use forceful termination
+    // 3. Clean up all associated resources (files, ports, etc.)
+    // 4. Update process status to 'terminated'
+  }
+
+  async terminateProcessGroup(processes: BackgroundProcess[]): Promise<void> {
+    // 1. Send SIGTERM to all processes simultaneously
+    // 2. Wait for graceful shutdown with timeout
+    // 3. Send SIGKILL to any remaining processes
+    // 4. Clean up all resources
+  }
+}
+```
+
+#### Failure Scenario Termination Patterns
+
+**Required Async Task Failure:**
+```
+1. Detect required async task failure
+2. Mark all pending tasks as cancelled
+3. Send SIGTERM to all running background processes
+4. Wait 5 seconds for graceful shutdown
+5. Send SIGKILL to any remaining processes
+6. Clean up all resources
+7. Exit with failure code
+```
+
+**Multiple Simultaneous Failures:**
+```
+1. Detect first required task failure
+2. Immediately cancel all pending tasks
+3. Terminate all background processes (graceful → forceful)
+4. Ignore subsequent failures during cleanup
+5. Report first failure as primary cause
+```
+
+**Cleanup Timeout Handling:**
+```
+1. Set maximum cleanup time (30 seconds)
+2. If cleanup exceeds timeout, log warning
+3. Proceed with forceful termination
+4. Exit with appropriate error code
+```
+
+#### Failure Propagation Architecture
+
+```typescript
+export class FailurePropagator {
+  async handleRequiredTaskFailure(failedProcess: BackgroundProcess): Promise<void> {
+    // 1. Mark all pending tasks as cancelled
+    // 2. Terminate all running background processes
+    // 3. Clean up resources
+    // 4. Propagate exit code
+  }
+
+  async handleOptionalTaskFailure(failedProcess: BackgroundProcess): Promise<void> {
+    // 1. Log failure
+    // 2. Clean up only the failed process
+    // 3. Continue with other tasks
+  }
+}
 ```
 
 ## Module Structure
@@ -124,15 +347,15 @@ export class DependencyResolver {
 
 ### 5. Task Executor (`src/task_executor.ts`)
 
-**Purpose**: Execute tasks according to the plan with async/sync orchestration
+**Purpose**: Execute tasks according to the plan with async/sync orchestration and background process management
 
 ```typescript
 export class TaskExecutor {
   async executeTasks(taskExecutions: TaskExecution[]): Promise<TaskResult[]> {
     // Execute tasks with proper async/sync handling, delays, and error propagation
     // - Sync tasks execute sequentially
-    // - Async tasks execute concurrently
-    // - Required task failures stop execution
+    // - Async tasks execute concurrently in background
+    // - Required task failures stop execution and terminate background processes
     // - Optional task failures continue execution
   }
 
@@ -144,9 +367,39 @@ export class TaskExecutor {
     // Execute single task and throw TaskExecutionError on required task failure
   }
 
-  private async executeTaskWithDelay(taskExecution: TaskExecution): Promise<TaskResult> {
-    // Apply delay before execution, then run task
+  // Background Process Management Methods
+  async startBackgroundTask(taskExecution: TaskExecution): Promise<BackgroundProcess> {
+    // Start task in background and return process handle for tracking
   }
+
+  async terminateBackgroundProcesses(processes: BackgroundProcess[]): Promise<void> {
+    // Gracefully terminate background processes, then forcefully if needed
+  }
+
+  async waitForBackgroundProcesses(processes: BackgroundProcess[]): Promise<TaskResult[]> {
+    // Wait for all background processes to complete and return results
+  }
+
+  private async executeTaskWithDelay(taskExecution: TaskExecution): Promise<TaskResult> {
+    // Apply delay timing: BEFORE for sync tasks, AFTER for async tasks
+  }
+
+  private async monitorProcessHealth(process: BackgroundProcess): Promise<void> {
+    // Monitor background process health and status
+  }
+
+  private async cleanupFailedProcesses(processes: BackgroundProcess[]): Promise<void> {
+    // Clean up resources from failed background processes
+  }
+}
+
+export interface BackgroundProcess {
+  id: string;
+  process: Deno.ChildProcess;
+  taskExecution: TaskExecution;
+  startTime: number;
+  status: 'running' | 'completed' | 'failed' | 'terminated';
+  result?: TaskResult;
 }
 ```
 
