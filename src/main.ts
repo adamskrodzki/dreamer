@@ -242,18 +242,13 @@ export async function main(args: string[] = Deno.args): Promise<number> {
       if (parsedArgs.debug) {
         console.log(`Debug: Current project path: ${currentProjectPath}`);
         console.log(`Debug: Resolved ${executionPlan.tasks.length} tasks:`);
+        console.log(`Executing task: ${parsedArgs.task}`);
+        console.log(`Execution plan: ${executionPlan.tasks.length} tasks`);
+        
         for (const task of executionPlan.tasks) {
           console.log(
             `  ${task.id} (async: ${task.async}, required: ${task.required}, delay: ${task.delay}ms)`,
           );
-        }
-      } else {
-        console.log(`Executing task: ${parsedArgs.task}`);
-        console.log(`Execution plan: ${executionPlan.tasks.length} tasks`);
-        let index = 0;
-        for (const task of executionPlan.tasks) {
-          index++;
-          console.log(` ${index}.  → ${task.projectPath} ${task.taskName}`);
         }
       }
 
